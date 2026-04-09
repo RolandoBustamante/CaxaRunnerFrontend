@@ -54,6 +54,7 @@ export default function App() {
   const pollRef = useRef(null);
   const errorCount = useRef(0);
   const raceClockRef = useRef({ raceStartTime: null, startPerf: null, baseElapsed: 0 });
+  const serverOffsetRef = useRef(0);
   const MAX_ERRORS = 3;
 
   const stopPolling = useCallback(() => {
@@ -80,7 +81,13 @@ export default function App() {
 
   const fetchRace = useCallback(async () => {
     try {
+      const requestStartedAt = Date.now();
       const data = await api.getRace();
+      const requestEndedAt = Date.now();
+      if (typeof data.serverNow === "number") {
+        const estimatedServerNow = data.serverNow + (requestEndedAt - requestStartedAt) / 2;
+        serverOffsetRef.current = estimatedServerNow - requestEndedAt;
+      }
       setRaceState(data);
       setError(null);
       errorCount.current = 0;
@@ -130,6 +137,7 @@ export default function App() {
 
   useEffect(() => {
     const { raceStarted, raceClosed, raceStartTime, raceEndTime } = raceState;
+    const getServerNow = () => Date.now() + serverOffsetRef.current;
 
     if (!raceStarted || !raceStartTime) {
       raceClockRef.current = { raceStartTime: null, startPerf: null, baseElapsed: 0 };
@@ -154,7 +162,7 @@ export default function App() {
     }
 
     if (raceClockRef.current.raceStartTime !== raceStartTime || raceClockRef.current.startPerf == null) {
-      const initialElapsed = Math.max(0, Date.now() - raceStartTime);
+      const initialElapsed = Math.max(0, getServerNow() - raceStartTime);
       raceClockRef.current = {
         raceStartTime,
         startPerf: performance.now(),
@@ -232,7 +240,8 @@ export default function App() {
   }, [fetchRace]);
 
   const handleFinisherAdd = useCallback(async (finisher) => {
-    await api.addFinisher(finisher.dorsal, finisher.timestamp, finisher.elapsedMs);
+    const serverTimestamp = Math.round(finisher.timestamp + serverOffsetRef.current);
+    await api.addFinisher(finisher.dorsal, serverTimestamp, finisher.elapsedMs);
     await fetchRace();
   }, [fetchRace]);
 
