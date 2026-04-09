@@ -30,6 +30,7 @@ export default function FinishLine({
   raceClosed,
   raceStartTime,
   raceEndTime,
+  elapsed,
   onStartRace,
   onCloseRace,
   onFinisherAdd,
@@ -37,28 +38,8 @@ export default function FinishLine({
 }) {
   const [dorsalInput, setDorsalInput] = useState("");
   const [error, setError] = useState("");
-  const [elapsed, setElapsed] = useState(0);
   const [successFlash, setSuccessFlash] = useState(null);
   const inputRef = useRef(null);
-  // performance.now() value aligned to raceStartTime epoch
-  const perfStartRef = useRef(null);
-
-  // Live elapsed timer — 10ms para mostrar centésimas fluidas
-  useEffect(() => {
-    if (!raceStarted || !raceStartTime) return;
-    perfStartRef.current = raceStartTime - performance.timeOrigin;
-
-    // Si está cerrada, congelar — con o sin endTime
-    if (raceClosed) {
-      if (raceEndTime) setElapsed(raceEndTime - raceStartTime);
-      return;
-    }
-
-    const interval = setInterval(() => {
-      setElapsed(performance.now() - perfStartRef.current);
-    }, 10);
-    return () => clearInterval(interval);
-  }, [raceStarted, raceStartTime, raceClosed, raceEndTime]);
 
   useEffect(() => {
     if (raceStarted) inputRef.current?.focus();
@@ -94,10 +75,7 @@ export default function FinishLine({
         return;
       }
       const now = Date.now();
-      // Sub-ms precision: integer ms + fractional from performance.now()
-      const elapsedMs = perfStartRef.current != null
-        ? performance.now() - perfStartRef.current
-        : now - raceStartTime;
+      const elapsedMs = Math.max(0, elapsed ?? 0);
       onFinisherAdd({
         dorsal,
         position: finishers.length + 1,
@@ -110,7 +88,7 @@ export default function FinishLine({
       setDorsalInput("");
       inputRef.current?.focus();
     },
-    [participantMap, finisherDorsals, finishers, onFinisherAdd, raceStartTime]
+    [participantMap, finisherDorsals, finishers, onFinisherAdd, elapsed]
   );
 
   const handleFormSubmit = (e) => {

@@ -47,11 +47,13 @@ export default function App() {
     participants: [],
     finishers: [],
   });
+  const [raceElapsed, setRaceElapsed] = useState(0);
   const [categories, setCategories] = useState(DEFAULT_CATEGORIES);
   const [loading, setLoading] = useState(!!currentUser);
   const [error, setError] = useState(null);
   const pollRef = useRef(null);
   const errorCount = useRef(0);
+  const raceClockRef = useRef({ raceStartTime: null, startPerf: null, baseElapsed: 0 });
   const MAX_ERRORS = 3;
 
   const stopPolling = useCallback(() => {
@@ -125,6 +127,50 @@ export default function App() {
 
     stopPolling();
   }, [activeTab, currentUser, startPolling, stopPolling]);
+
+  useEffect(() => {
+    const { raceStarted, raceClosed, raceStartTime, raceEndTime } = raceState;
+
+    if (!raceStarted || !raceStartTime) {
+      raceClockRef.current = { raceStartTime: null, startPerf: null, baseElapsed: 0 };
+      setRaceElapsed(0);
+      return;
+    }
+
+    if (raceClosed) {
+      const currentElapsed = raceClockRef.current.startPerf == null
+        ? raceClockRef.current.baseElapsed
+        : raceClockRef.current.baseElapsed + (performance.now() - raceClockRef.current.startPerf);
+      const closedElapsed = raceEndTime
+        ? Math.max(0, raceEndTime - raceStartTime)
+        : Math.max(0, currentElapsed);
+      raceClockRef.current = {
+        raceStartTime,
+        startPerf: null,
+        baseElapsed: closedElapsed,
+      };
+      setRaceElapsed(closedElapsed);
+      return;
+    }
+
+    if (raceClockRef.current.raceStartTime !== raceStartTime || raceClockRef.current.startPerf == null) {
+      const initialElapsed = Math.max(0, Date.now() - raceStartTime);
+      raceClockRef.current = {
+        raceStartTime,
+        startPerf: performance.now(),
+        baseElapsed: initialElapsed,
+      };
+      setRaceElapsed(initialElapsed);
+    }
+
+    const interval = setInterval(() => {
+      const { startPerf, baseElapsed } = raceClockRef.current;
+      if (startPerf == null) return;
+      setRaceElapsed(Math.max(0, baseElapsed + (performance.now() - startPerf)));
+    }, 10);
+
+    return () => clearInterval(interval);
+  }, [raceState.raceStarted, raceState.raceClosed, raceState.raceStartTime, raceState.raceEndTime]);
 
   const handleLogin = useCallback((user) => {
     setCurrentUser(user);
@@ -322,6 +368,7 @@ export default function App() {
             raceClosed={raceState.raceClosed}
             raceStartTime={raceStartTime}
             raceEndTime={raceState.raceEndTime}
+            elapsed={raceElapsed}
             onStartRace={handleStartRace}
             onCloseRace={handleCloseRace}
             onFinisherAdd={handleFinisherAdd}
@@ -344,10 +391,9 @@ export default function App() {
         )}
         {activeTab === "cronometro" && (
           <CronometroTab
-            raceStartTime={raceStartTime}
-            raceEndTime={raceState.raceEndTime}
             raceClosed={raceClosed}
             finishers={finishers}
+            elapsed={raceElapsed}
           />
         )}
         {activeTab === "usuarios" && currentUser.role === "MASTER" && <Users />}

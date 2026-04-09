@@ -211,18 +211,6 @@ export default function Results({ participants, finishers, raceStartTime, catego
   const distanceGroups = groupByDistance(finishers, participants, categories);
   const distances = Object.keys(distanceGroups).sort();
 
-  if (finishers.length === 0) {
-    return (
-      <div className="results-container">
-        <div className="empty-state">
-          <div className="empty-icon">🏆</div>
-          <h2>Sin resultados aún</h2>
-          <p className="text-muted">Los resultados aparecerán aquí una vez que registres atletas en la Meta.</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="results-container">
       {/* Toolbar */}
@@ -262,6 +250,14 @@ export default function Results({ participants, finishers, raceStartTime, catego
         </div>
       </div>
 
+      {finishers.length === 0 ? (
+        <div className="empty-state">
+          <div className="empty-icon">🏆</div>
+          <h2>Sin resultados aún</h2>
+          <p className="text-muted">Los resultados aparecerán aquí una vez que registres atletas en la Meta.</p>
+        </div>
+      ) : (
+        <>
       {/* Edit mode panels */}
       {editMode && view === "general" && (
         <>
@@ -495,6 +491,8 @@ export default function Results({ participants, finishers, raceStartTime, catego
             })
           )}
         </div>
+      )}
+        </>
       )}
     </div>
   );
