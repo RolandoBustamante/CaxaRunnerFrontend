@@ -1,29 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { formatTime, getCategory } from "../utils/categories";
 
-const PAD_KEYS = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "⌫", "0", "✓"];
-const MOBILE_POINTER_QUERY = "(pointer: coarse)";
-
-function NumPad({ onKey }) {
-  return (
-    <div className="numpad">
-      {PAD_KEYS.map((key) => (
-        <button
-          key={key}
-          type="button"
-          className={`numpad-key ${key === "✓" ? "numpad-enter" : key === "⌫" ? "numpad-del" : ""}`}
-          onPointerDown={(event) => {
-            event.preventDefault();
-            onKey(key);
-          }}
-        >
-          {key}
-        </button>
-      ))}
-    </div>
-  );
-}
-
 export default function FinishLine({
   participants,
   finishers,
@@ -40,23 +17,11 @@ export default function FinishLine({
   const [dorsalInput, setDorsalInput] = useState("");
   const [error, setError] = useState("");
   const [successFlash, setSuccessFlash] = useState(null);
-  const [useNativeKeyboard, setUseNativeKeyboard] = useState(false);
   const inputRef = useRef(null);
 
   useEffect(() => {
     if (raceStarted) inputRef.current?.focus();
   }, [raceStarted]);
-
-  useEffect(() => {
-    if (typeof window === "undefined" || !window.matchMedia) return;
-
-    const media = window.matchMedia(MOBILE_POINTER_QUERY);
-    const updateMode = () => setUseNativeKeyboard(media.matches);
-
-    updateMode();
-    media.addEventListener?.("change", updateMode);
-    return () => media.removeEventListener?.("change", updateMode);
-  }, []);
 
   const participantMap = {};
   for (const participant of participants) {
@@ -113,25 +78,6 @@ export default function FinishLine({
     submit(dorsalInput);
   };
 
-  const handlePadKey = useCallback(
-    (key) => {
-      if (key === "⌫") {
-        setDorsalInput((value) => value.slice(0, -1));
-        setError("");
-        return;
-      }
-
-      if (key === "✓") {
-        submit(dorsalInput);
-        return;
-      }
-
-      setDorsalInput((value) => value + key);
-      setError("");
-    },
-    [dorsalInput, submit]
-  );
-
   const recentFinishers = [...finishers].reverse().slice(0, 10);
 
   if (!raceStarted) {
@@ -185,83 +131,89 @@ export default function FinishLine({
         </div>
       )}
 
-      {!raceClosed && (
-        <div className={`dorsal-input-section ${successFlash ? "flash-success" : ""}`}>
-          <form onSubmit={handleFormSubmit} className="dorsal-form">
-            <label className="dorsal-label">NUMERO DE DORSAL</label>
-            <div className="dorsal-input-row">
-              <input
-                ref={inputRef}
-                type="text"
-                inputMode={useNativeKeyboard ? "numeric" : "none"}
-                pattern="[0-9]*"
-                className={`dorsal-input ${error ? "input-error" : ""}`}
-                value={dorsalInput}
-                onChange={(event) => {
-                  setDorsalInput(event.target.value.replace(/\D/g, ""));
-                  setError("");
-                }}
-                placeholder="000"
-                autoComplete="off"
-              />
-              <button type="submit" className="btn btn-register">
-                REGISTRAR
-              </button>
-            </div>
-            {error && <div className="input-error-msg">{error}</div>}
-          </form>
+      <div className="finish-main-grid">
+        {!raceClosed && (
+          <div className={`dorsal-input-section ${successFlash ? "flash-success" : ""}`}>
+            <form onSubmit={handleFormSubmit} className="dorsal-form">
+              <label className="dorsal-label">NUMERO DE DORSAL</label>
+              <div className="dorsal-input-row">
+                <input
+                  ref={inputRef}
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  className={`dorsal-input ${error ? "input-error" : ""}`}
+                  value={dorsalInput}
+                  onChange={(event) => {
+                    setDorsalInput(event.target.value.replace(/\D/g, ""));
+                    setError("");
+                  }}
+                  placeholder="000"
+                  autoComplete="off"
+                />
+                <button type="submit" className="btn btn-register">
+                  REGISTRAR
+                </button>
+              </div>
+              {error && <div className="input-error-msg">{error}</div>}
+            </form>
 
-          {!useNativeKeyboard && <NumPad onKey={handlePadKey} />}
+            {successFlash && participantMap[successFlash] && (
+              <div className="success-flash">
+                Puesto #{finishers.length} <strong>{participantMap[successFlash].nombre}</strong>{" "}
+                <span className="category-tag">{participantMap[successFlash].distancia}</span>
+              </div>
+            )}
+          </div>
+        )}
 
-          {successFlash && participantMap[successFlash] && (
-            <div className="success-flash">
-              Puesto #{finishers.length} <strong>{participantMap[successFlash].nombre}</strong>{" "}
-              <span className="category-tag">{participantMap[successFlash].distancia}</span>
+        <div className="recent-finishers">
+          <div className="recent-header">
+            <h3 className="recent-title">Ultimos registros</h3>
+            <div className="recent-total">
+              <span className="recent-total-number">{finishers.length}</span>
+              <span className="recent-total-label">total</span>
             </div>
+          </div>
+          {recentFinishers.length === 0 ? (
+            <p className="text-muted">Aun no hay atletas registrados.</p>
+          ) : (
+            <ul className="finisher-list">
+              {recentFinishers.map((finisher, idx) => {
+                const position = finishers.indexOf(finisher) + 1;
+                const participant = participantMap[String(finisher.dorsal).trim()];
+                const category = participant
+                  ? getCategory(participant.edad, participant.genero, participant.distancia)
+                  : "-";
+
+                return (
+                  <li
+                    key={finisher.dorsal + finisher.timestamp}
+                    className={`finisher-item ${idx === 0 ? "finisher-item-latest" : ""}`}
+                  >
+                    <span className="finisher-pos">#{position}</span>
+                    <span className="finisher-dorsal">{finisher.dorsal}</span>
+                    <span className="finisher-name">{participant ? participant.nombre : "Desconocido"}</span>
+                    <span className="finisher-category">{category}</span>
+                    <span className="finisher-time">{formatTime(finisher.elapsedMs)}</span>
+                    <button
+                      className="btn-remove"
+                      onClick={() => onFinisherRemove(finisher.dorsal)}
+                      title="Eliminar registro"
+                    >
+                      ×
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+          {finishers.length > 10 && (
+            <p className="text-muted text-center" style={{ marginTop: "0.5rem" }}>
+              Mostrando los ultimos 10 de {finishers.length} registros
+            </p>
           )}
         </div>
-      )}
-
-      <div className="recent-finishers">
-        <h3 className="recent-title">Ultimos registros</h3>
-        {recentFinishers.length === 0 ? (
-          <p className="text-muted">Aun no hay atletas registrados.</p>
-        ) : (
-          <ul className="finisher-list">
-            {recentFinishers.map((finisher, idx) => {
-              const position = finishers.indexOf(finisher) + 1;
-              const participant = participantMap[String(finisher.dorsal).trim()];
-              const category = participant
-                ? getCategory(participant.edad, participant.genero, participant.distancia)
-                : "-";
-
-              return (
-                <li
-                  key={finisher.dorsal + finisher.timestamp}
-                  className={`finisher-item ${idx === 0 ? "finisher-item-latest" : ""}`}
-                >
-                  <span className="finisher-pos">#{position}</span>
-                  <span className="finisher-dorsal">{finisher.dorsal}</span>
-                  <span className="finisher-name">{participant ? participant.nombre : "Desconocido"}</span>
-                  <span className="finisher-category">{category}</span>
-                  <span className="finisher-time">{formatTime(finisher.elapsedMs)}</span>
-                  <button
-                    className="btn-remove"
-                    onClick={() => onFinisherRemove(finisher.dorsal)}
-                    title="Eliminar registro"
-                  >
-                    ×
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-        {finishers.length > 10 && (
-          <p className="text-muted text-center" style={{ marginTop: "0.5rem" }}>
-            Mostrando los ultimos 10 de {finishers.length} registros
-          </p>
-        )}
       </div>
     </div>
   );

@@ -742,6 +742,13 @@ button:disabled {
   gap: 1.25rem;
 }
 
+.finish-main-grid {
+  display: grid;
+  grid-template-columns: minmax(320px, 0.95fr) minmax(0, 1.35fr);
+  gap: 1rem;
+  align-items: start;
+}
+
 .race-clock-wrapper {
   background: var(--bg-surface);
   border: 1px solid var(--border);
@@ -972,6 +979,15 @@ button:disabled {
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   padding: 1rem 1.25rem;
+  min-height: 100%;
+}
+
+.recent-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
 }
 
 .recent-title {
@@ -980,7 +996,25 @@ button:disabled {
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--text-muted);
-  margin-bottom: 0.75rem;
+}
+
+.recent-total {
+  display: flex;
+  align-items: baseline;
+  gap: 0.35rem;
+}
+
+.recent-total-number {
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: var(--accent-green);
+}
+
+.recent-total-label {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
 }
 
 .finisher-list {
@@ -1043,6 +1077,12 @@ button:disabled {
   font-weight: 600;
   min-width: 4.5rem;
   text-align: right;
+}
+
+@media (max-width: 1024px) {
+  .finish-main-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .btn-remove {
@@ -2236,6 +2276,7 @@ button:disabled {
   /* Cronómetro más compacto */
   .race-clock { font-size: 3rem; }
   .race-clock-wrapper { padding: 1rem; }
+  .finish-main-grid { grid-template-columns: 1fr; gap: 0.75rem; }
 
   /* Numpad ocupa todo el ancho, teclas más altas */
   .numpad { gap: 0.4rem; }
@@ -2810,7 +2851,7 @@ button:disabled {
   .race-clock-wrapper { padding: 0.5rem 1rem; }
   .numpad-key { padding: 0.6rem 0; font-size: 1.3rem; }
   .finish-active { gap: 0.5rem; }
-  .recent-finishers { display: none; }
+  .finish-main-grid { grid-template-columns: 1fr; }
 }
 
 /* =========================================================
