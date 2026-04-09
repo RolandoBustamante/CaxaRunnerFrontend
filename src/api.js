@@ -1,7 +1,6 @@
-// Base URL: in dev Vite proxies /api → localhost:3001
-// In production the Express server serves everything from the same origin
-
-const BASE = "/api";
+const BASE = import.meta.env.DEV
+  ? "/api"
+  : "https://server-caxas.seypro.net.pe/api";
 
 function getToken() {
   return localStorage.getItem("token");
@@ -55,7 +54,7 @@ export const api = {
   closeRace: () => request("POST", "/race/close"),
   resetResults: () => request("POST", "/race/reset-results"),
   resetRace: () => request("POST", "/race/reset"),
-  getPublic: () => fetch("/api/public").then((r) => r.json()),
+  getPublic: () => fetch(`${BASE}/public`).then((r) => r.json()),
 
   // Participants
   uploadParticipants: (participants) => request("POST", "/participants", { participants }),
