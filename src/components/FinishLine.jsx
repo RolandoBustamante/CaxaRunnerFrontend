@@ -79,6 +79,10 @@ export default function FinishLine({
   };
 
   const recentFinishers = [...finishers].reverse().slice(0, 10);
+  const latestFinisher = recentFinishers[0] ?? null;
+  const latestParticipant = latestFinisher
+    ? participantMap[String(latestFinisher.dorsal).trim()]
+    : null;
 
   if (!raceStarted) {
     return (
@@ -136,6 +140,9 @@ export default function FinishLine({
           <div className={`dorsal-input-section ${successFlash ? "flash-success" : ""}`}>
             <form onSubmit={handleFormSubmit} className="dorsal-form">
               <label className="dorsal-label">NUMERO DE DORSAL</label>
+              <div className="dorsal-helper">
+                En computadora usa Enter. En celular toca el boton grande.
+              </div>
               <div className="dorsal-input-row">
                 <input
                   ref={inputRef}
@@ -151,7 +158,7 @@ export default function FinishLine({
                   placeholder="000"
                   autoComplete="off"
                 />
-                <button type="submit" className="btn btn-register">
+                <button type="submit" className="btn btn-register btn-register-inline">
                   REGISTRAR
                 </button>
               </div>
@@ -175,6 +182,24 @@ export default function FinishLine({
               <span className="recent-total-label">total</span>
             </div>
           </div>
+          {latestFinisher && (
+            <div className="recent-highlight">
+              <div className="recent-highlight-top">
+                <span className="recent-highlight-badge">Ultimo ingreso</span>
+                <span className="recent-highlight-time">{formatTime(latestFinisher.elapsedMs)}</span>
+              </div>
+              <div className="recent-highlight-main">
+                <span className="recent-highlight-pos">#{finishers.indexOf(latestFinisher) + 1}</span>
+                <div className="recent-highlight-body">
+                  <strong>{latestParticipant ? latestParticipant.nombre : `Dorsal ${latestFinisher.dorsal}`}</strong>
+                  <span>
+                    Dorsal {latestFinisher.dorsal}
+                    {latestParticipant ? ` · ${latestParticipant.distancia}` : ""}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
           {recentFinishers.length === 0 ? (
             <p className="text-muted">Aun no hay atletas registrados.</p>
           ) : (
@@ -215,6 +240,18 @@ export default function FinishLine({
           )}
         </div>
       </div>
+
+      {!raceClosed && (
+        <div className="mobile-register-bar">
+          <button
+            type="button"
+            className="btn btn-register mobile-register-btn"
+            onClick={() => submit(dorsalInput)}
+          >
+            REGISTRAR DORSAL
+          </button>
+        </div>
+      )}
     </div>
   );
 }

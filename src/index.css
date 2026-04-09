@@ -883,6 +883,11 @@ button:disabled {
   gap: 0.75rem;
 }
 
+.dorsal-helper {
+  font-size: 0.84rem;
+  color: var(--text-muted);
+}
+
 .dorsal-label {
   font-size: 0.75rem;
   font-weight: 700;
@@ -944,6 +949,14 @@ button:disabled {
 
 .btn-register:hover {
   background: var(--accent-green-hover);
+}
+
+.btn-register {
+  min-height: 56px;
+}
+
+.mobile-register-bar {
+  display: none;
 }
 
 .input-error-msg {
@@ -1015,6 +1028,73 @@ button:disabled {
   color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.06em;
+}
+
+.recent-highlight {
+  border: 1px solid rgba(34, 197, 94, 0.35);
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.14), rgba(15, 23, 42, 0.15));
+  border-radius: var(--radius-md);
+  padding: 0.9rem 1rem;
+  margin-bottom: 0.85rem;
+}
+
+.recent-highlight-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.6rem;
+}
+
+.recent-highlight-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent-green);
+}
+
+.recent-highlight-time {
+  font-family: monospace;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.recent-highlight-main {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.recent-highlight-pos {
+  min-width: 3rem;
+  height: 3rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: rgba(34, 197, 94, 0.2);
+  color: var(--accent-green);
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.recent-highlight-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.recent-highlight-body strong {
+  font-size: 1rem;
+  color: var(--text-primary);
+}
+
+.recent-highlight-body span {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
 }
 
 .finisher-list {
@@ -2284,13 +2364,34 @@ button:disabled {
 
   /* Input dorsal más compacto */
   .dorsal-input-section { padding: 0.75rem; }
-  .dorsal-input { font-size: 1.75rem; }
+  .dorsal-input-row { flex-direction: column; gap: 0.6rem; }
+  .dorsal-input { font-size: 2rem; min-height: 64px; }
   .dorsal-label { font-size: 0.7rem; }
+  .dorsal-helper { font-size: 0.8rem; }
+  .btn-register { width: 100%; min-height: 64px; font-size: 1.1rem; }
+  .btn-register-inline { display: none; }
+  .mobile-register-bar {
+    display: block;
+    position: sticky;
+    bottom: max(0.5rem, env(safe-area-inset-bottom));
+    z-index: 40;
+    padding-top: 0.25rem;
+  }
+  .mobile-register-btn {
+    width: 100%;
+    min-height: 68px;
+    border-radius: calc(var(--radius-lg) + 2px);
+    box-shadow: 0 10px 26px rgba(34, 197, 94, 0.25);
+  }
 
   /* Success flash */
   .success-flash { font-size: 0.9rem; padding: 0.6rem 0.75rem; }
 
   /* Finisher list compacta */
+  .recent-finishers { padding: 0.85rem; }
+  .recent-header { align-items: flex-start; }
+  .recent-highlight { padding: 0.8rem; }
+  .recent-highlight-main { align-items: flex-start; }
   .finisher-item { gap: 0.3rem; font-size: 0.82rem; padding: 0.5rem 0.4rem; }
   .finisher-pos { font-size: 0.9rem; min-width: 28px; }
   .finisher-time { font-size: 0.8rem; }
