@@ -11,6 +11,7 @@ import RaceSelector from "./components/RaceSelector";
 import { api } from "./api";
 import { confirmDialog } from "./utils/dialog";
 import { DEFAULT_CATEGORIES } from "./utils/categories";
+import { formatRaceDate } from "./utils/dates";
 
 const POLL_INTERVAL = 2000;
 const POLLING_TABS = new Set(["meta", "resultados", "cronometro"]);
@@ -148,7 +149,7 @@ export default function App() {
       setError(null);
       errorCount.current = 0;
     } catch (err) {
-      if (err.message === "SesiÃ³n expirada") return;
+      if (err.message === "Sesion expirada") return;
       errorCount.current += 1;
       if (errorCount.current >= MAX_ERRORS) {
         stopPolling();
@@ -298,8 +299,8 @@ export default function App() {
 
   const handleCloseRace = useCallback(async () => {
     const ok = await confirmDialog({
-      title: "Â¿Cerrar la carrera?",
-      text: "Ya no se podrÃ¡n registrar mÃ¡s dorsales.",
+      title: "Cerrar la carrera?",
+      text: "Ya no se podran registrar mas dorsales.",
       confirmText: "Cerrar carrera",
     });
     if (!ok) return;
@@ -310,8 +311,8 @@ export default function App() {
 
   const handleResetResults = useCallback(async () => {
     const ok = await confirmDialog({
-      title: "Â¿Limpiar resultados?",
-      text: "Se borrarÃ¡n todos los finishers y se reiniciarÃ¡ la carrera. Los participantes se mantienen.",
+      title: "Limpiar resultados?",
+      text: "Se borraran todos los finishers y se reiniciara la carrera. Los participantes se mantienen.",
       confirmText: "Limpiar",
     });
     if (!ok) return;
@@ -323,8 +324,8 @@ export default function App() {
 
   const handleResetAll = useCallback(async () => {
     const ok = await confirmDialog({
-      title: "Â¿Resetear todo?",
-      text: "Se borrarÃ¡n participantes, resultados y el estado de la carrera. Esta acciÃ³n no se puede deshacer.",
+      title: "Resetear todo?",
+      text: "Se borraran participantes, resultados y el estado de la carrera. Esta accion no se puede deshacer.",
       confirmText: "Resetear todo",
     });
     if (!ok) return;
@@ -405,12 +406,33 @@ export default function App() {
   const selectedRace = races.find((race) => race.id === selectedRaceId) || null;
   const TABS = getTabs(currentUser.role, raceStarted, raceClosed);
   const officialDateLabel = selectedRace?.isOfficial && selectedRace?.eventDate
-    ? new Date(selectedRace.eventDate).toLocaleDateString("es-PE", {
-        year: "numeric",
-        month: "short",
-        day: "numeric",
-      })
+    ? formatRaceDate(selectedRace.eventDate, { month: "short" })
     : null;
+  const renderTabButton = (tab) => {
+    const badge =
+      tab.id === "participantes"
+        ? participants.length || null
+        : tab.id === "acreditacion"
+          ? participants.length || null
+          : tab.id === "meta" || tab.id === "resultados"
+            ? finishers.length || null
+            : null;
+
+    return (
+      <button
+        key={tab.id}
+        className={`tab-btn ${activeTab === tab.id ? "tab-btn-active" : ""}`}
+        onClick={() => setActiveTab(tab.id)}
+      >
+        <span className="tab-btn-label">{tab.label}</span>
+        {badge !== null && badge > 0 && (
+          <span className={`tab-badge ${activeTab === tab.id ? "tab-badge-active" : ""}`}>
+            {badge}
+          </span>
+        )}
+      </button>
+    );
+  };
 
   return (
     <div className="app">
@@ -429,34 +451,6 @@ export default function App() {
           )}
         </div>
 
-        <nav className="tab-nav">
-          {TABS.map((tab) => {
-            const badge =
-              tab.id === "participantes"
-                ? participants.length || null
-                : tab.id === "acreditacion"
-                  ? participants.length || null
-                  : tab.id === "meta" || tab.id === "resultados"
-                    ? finishers.length || null
-                    : null;
-
-            return (
-              <button
-                key={tab.id}
-                className={`tab-btn ${activeTab === tab.id ? "tab-btn-active" : ""}`}
-                onClick={() => setActiveTab(tab.id)}
-              >
-                {tab.label}
-                {badge !== null && badge > 0 && (
-                  <span className={`tab-badge ${activeTab === tab.id ? "tab-badge-active" : ""}`}>
-                    {badge}
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </nav>
-
         <div className="navbar-right">
           {raceStarted && (
             <div className="navbar-status">
@@ -466,7 +460,7 @@ export default function App() {
           )}
           {error === "offline" && (
             <button className="reconnect-btn" onClick={startPolling}>
-              âš ï¸ Sin conexiÃ³n â€” Reconectar
+              Sin conexion - Reconectar
             </button>
           )}
           <div className="navbar-user" ref={userMenuRef}>
@@ -611,70 +605,81 @@ export default function App() {
             No hay una carrera disponible para trabajar en este usuario.
           </div>
         ) : (
-          <>
-        {activeTab === "participantes" && (
-          <ParticipantUpload
-            participants={participants}
-            onParticipantsLoad={handleParticipantsLoad}
-          />
-        )}
-        {activeTab === "acreditacion" && (
-          <Acreditacion
-            participants={participants}
-            categories={categories}
-            onUpdate={handleAcreditacionUpdate}
-            raceId={selectedRaceId}
-          />
-        )}
-        {activeTab === "meta" && (
-          <FinishLine
-            participants={participants}
-            finishers={finishers}
-            raceStarted={raceStarted}
-            raceClosed={raceState.raceClosed}
-            raceStartTime={raceStartTime}
-            raceEndTime={raceState.raceEndTime}
-            elapsed={raceElapsed}
-            onStartRace={handleStartRace}
-            onCloseRace={handleCloseRace}
-            onFinisherAdd={handleFinisherAdd}
-            onFinisherRemove={handleFinisherRemove}
-          />
-        )}
-        {activeTab === "resultados" && (
-          <Results
-            participants={participants}
-            finishers={finishers}
-            raceStartTime={raceStartTime}
-            categories={categories}
-            race={selectedRace}
-            onReorder={handleReorder}
-            onFinisherAdd={handleMissedFinisherAdd}
-            onFinisherDisqualify={handleFinisherDisqualify}
-            onFinisherTimeUpdate={handleFinisherTimeUpdate}
-            onResetResults={handleResetResults}
-            onResetAll={handleResetAll}
-          />
-        )}
-        {activeTab === "cronometro" && (
-          <CronometroTab
-            raceClosed={raceClosed}
-            finishers={finishers}
-            elapsed={raceElapsed}
-            race={selectedRace}
-          />
-        )}
-        {activeTab === "usuarios" && currentUser.role === "MASTER" && <Users />}
-        {activeTab === "configuracion" && currentUser.role === "MASTER" && (
-          <CategoryConfig
-            categories={categories}
-            onCategoriesChange={setCategories}
-            raceId={selectedRaceId}
-            race={selectedRace}
-            onRaceUpdated={refreshRaces}
-          />
-        )}
-          </>
+          <div className="app-shell">
+            <aside className="app-sidebar">
+              <div className="app-sidebar-card">
+                <div className="app-sidebar-label">Modulos</div>
+                <nav className="tab-nav tab-nav-vertical">
+                  {TABS.map(renderTabButton)}
+                </nav>
+              </div>
+            </aside>
+
+            <section className="app-main-panel">
+              {activeTab === "participantes" && (
+                <ParticipantUpload
+                  participants={participants}
+                  onParticipantsLoad={handleParticipantsLoad}
+                />
+              )}
+              {activeTab === "acreditacion" && (
+                <Acreditacion
+                  participants={participants}
+                  categories={categories}
+                  onUpdate={handleAcreditacionUpdate}
+                  raceId={selectedRaceId}
+                />
+              )}
+              {activeTab === "meta" && (
+                <FinishLine
+                  participants={participants}
+                  finishers={finishers}
+                  raceStarted={raceStarted}
+                  raceClosed={raceState.raceClosed}
+                  raceStartTime={raceStartTime}
+                  raceEndTime={raceState.raceEndTime}
+                  elapsed={raceElapsed}
+                  onStartRace={handleStartRace}
+                  onCloseRace={handleCloseRace}
+                  onFinisherAdd={handleFinisherAdd}
+                  onFinisherRemove={handleFinisherRemove}
+                />
+              )}
+              {activeTab === "resultados" && (
+                <Results
+                  participants={participants}
+                  finishers={finishers}
+                  raceStartTime={raceStartTime}
+                  categories={categories}
+                  race={selectedRace}
+                  onReorder={handleReorder}
+                  onFinisherAdd={handleMissedFinisherAdd}
+                  onFinisherDisqualify={handleFinisherDisqualify}
+                  onFinisherTimeUpdate={handleFinisherTimeUpdate}
+                  onResetResults={handleResetResults}
+                  onResetAll={handleResetAll}
+                />
+              )}
+              {activeTab === "cronometro" && (
+                <CronometroTab
+                  raceClosed={raceClosed}
+                  finishers={finishers}
+                  elapsed={raceElapsed}
+                  race={selectedRace}
+                />
+              )}
+              {activeTab === "usuarios" && currentUser.role === "MASTER" && <Users />}
+              {activeTab === "configuracion" && currentUser.role === "MASTER" && (
+                <CategoryConfig
+                  categories={categories}
+                  onCategoriesChange={setCategories}
+                  raceId={selectedRaceId}
+                  race={selectedRace}
+                  onRaceUpdated={refreshRaces}
+                />
+              )}
+            </section>
+          </div>
         )}
       </main>
     </div>

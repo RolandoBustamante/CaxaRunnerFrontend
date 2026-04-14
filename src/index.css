@@ -114,16 +114,17 @@ a {
 .navbar {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 1rem;
   background: var(--bg-surface);
   border-bottom: 1px solid var(--border);
-  padding: 0 1.5rem;
-  height: 60px;
+  padding: 0.85rem 1.5rem;
+  min-height: 68px;
   position: sticky;
   top: 0;
   z-index: 100;
   box-shadow: var(--shadow-sm);
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
 }
 
 .navbar-brand {
@@ -147,34 +148,47 @@ a {
   filter: none;
 }
 
+.navbar-right {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
 .tab-nav {
   display: flex;
-  gap: 0.25rem;
-  flex: 1;
-  justify-content: center;
+  gap: 0.45rem;
+}
+
+.tab-nav-vertical {
+  flex-direction: column;
 }
 
 .tab-btn {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
-  padding: 0.5rem 1.25rem;
-  border-radius: var(--radius-sm);
-  border: 1px solid transparent;
-  background: transparent;
+  justify-content: space-between;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.8rem 0.95rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: var(--bg-card);
   color: var(--text-secondary);
   font-size: 0.95rem;
-  font-weight: 500;
+  font-weight: 600;
   font-family: inherit;
   cursor: pointer;
   transition: background 0.15s, color 0.15s, border-color 0.15s;
   white-space: nowrap;
+  text-align: left;
 }
 
 .tab-btn:hover {
   background: var(--bg-hover);
   color: var(--text-primary);
-  border-color: var(--border);
+  border-color: var(--border-light);
 }
 
 .tab-btn-active {
@@ -187,6 +201,12 @@ a {
   background: var(--accent-green-dim);
   color: var(--accent-green);
   border-color: var(--accent-green);
+}
+
+.tab-btn-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .tab-badge {
@@ -243,9 +263,43 @@ a {
 .main-content {
   flex: 1;
   padding: 1.5rem;
-  max-width: 1100px;
+  max-width: 1400px;
   margin: 0 auto;
   width: 100%;
+}
+
+.app-shell {
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+.app-sidebar {
+  position: sticky;
+  top: 92px;
+}
+
+.app-sidebar-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 0.9rem;
+  box-shadow: var(--shadow-sm);
+}
+
+.app-sidebar-label {
+  margin-bottom: 0.8rem;
+  padding: 0 0.2rem;
+  font-size: 0.74rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+}
+
+.app-main-panel {
+  min-width: 0;
 }
 
 /* =========================================================
@@ -2272,26 +2326,51 @@ button:disabled {
 
   /* Navbar */
   .navbar {
-    height: auto;
     padding: 0.5rem 0.75rem;
     gap: 0.5rem;
-    flex-wrap: nowrap;
+    min-height: 0;
+    flex-wrap: wrap;
   }
 
   .navbar-brand { gap: 0.35rem; }
   .brand-logo   { height: 1.6rem; }
 
-  .tab-nav { gap: 0.15rem; }
-
-  .tab-btn {
-    padding: 0.5rem 0.65rem;
-    font-size: 0.82rem;
+  .navbar-right {
+    width: 100%;
+    justify-content: space-between;
+    flex-wrap: wrap;
   }
 
   .navbar-status .status-text { display: none; }
 
   /* Main */
   .main-content { padding: 0.75rem; }
+  .app-shell {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+  .app-sidebar {
+    position: static;
+  }
+  .app-sidebar-card {
+    padding: 0.65rem;
+  }
+  .tab-nav-vertical {
+    flex-direction: row;
+    overflow-x: auto;
+    padding-bottom: 0.2rem;
+    scrollbar-width: thin;
+  }
+  .tab-nav-vertical .tab-btn {
+    width: auto;
+    min-width: max-content;
+    padding: 0.6rem 0.8rem;
+    font-size: 0.84rem;
+    border-radius: 999px;
+  }
+  .tab-nav-vertical .tab-btn-label {
+    overflow: visible;
+  }
 
   /* Tables → scroll horizontal */
   .table-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; }
@@ -2347,7 +2426,14 @@ button:disabled {
 
   /* Navbar: logo compacto en móvil */
   .brand-logo { height: 1.4rem; }
-  .tab-btn { padding: 0.45rem 0.5rem; font-size: 0.78rem; }
+  .navbar-race-pill {
+    width: 100%;
+    justify-content: center;
+  }
+  .tab-nav-vertical .tab-btn {
+    padding: 0.5rem 0.7rem;
+    font-size: 0.78rem;
+  }
   .tab-badge { min-width: 16px; height: 16px; font-size: 0.65rem; }
 
   /* Main */

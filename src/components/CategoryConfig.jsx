@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { api } from "../api";
 import { confirmDialog } from "../utils/dialog";
 import { DEFAULT_CATEGORIES } from "../utils/categories";
+import { toDateInputValue } from "../utils/dates";
 
 function newRow() {
   return { name: "", minAge: "", maxAge: "" };
@@ -22,14 +23,14 @@ export default function CategoryConfig({
   );
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState(null);
-  const [eventDate, setEventDate] = useState(race?.eventDate ? String(race.eventDate).slice(0, 10) : "");
+  const [eventDate, setEventDate] = useState(toDateInputValue(race?.eventDate));
 
   useEffect(() => {
     setRows(categories.map((category) => ({
       ...category,
       maxAge: category.maxAge === null ? "" : category.maxAge,
     })));
-    setEventDate(race?.eventDate ? String(race.eventDate).slice(0, 10) : "");
+    setEventDate(toDateInputValue(race?.eventDate));
     setMsg(null);
   }, [categories, race?.eventDate]);
 

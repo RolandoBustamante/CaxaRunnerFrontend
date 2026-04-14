@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { api } from "../api";
 import { formatTime } from "../utils/categories";
+import { formatRaceDate } from "../utils/dates";
 
 function getResultsSlug() {
   const match = window.location.pathname.match(/^\/resultados\/([^/]+)$/);
@@ -57,9 +58,7 @@ function CertificatePreview({ race, certificate }) {
           <span><strong>Puesto en categoria:</strong> {certificate.categoryPosition ?? "-"}</span>
         </div>
         <div className="certificate-footer-meta">
-          <span><strong>Fecha del evento:</strong> {race?.eventDate
-            ? new Date(race.eventDate).toLocaleDateString("es-PE", { year: "numeric", month: "long", day: "numeric" })
-            : "-"}</span>
+          <span><strong>Fecha del evento:</strong> {race?.eventDate ? formatRaceDate(race.eventDate) : "-"}</span>
           <span><strong>Codigo:</strong> {certificate.certificateCode}</span>
         </div>
       </div>
