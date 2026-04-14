@@ -1,66 +1,63 @@
 import { useState, useCallback } from "react";
-import { formatTime, getCategory, groupByDistance, sortedCategories, getAbsoluteByGender, DEFAULT_CATEGORIES } from "../utils/categories";
+import {
+  formatTime,
+  getCategory,
+  groupByDistance,
+  sortedCategories,
+  getAbsoluteByGender,
+  DEFAULT_CATEGORIES,
+} from "../utils/categories";
 import CategoryResults from "./CategoryResults";
 import AbsoluteWinners from "./AbsoluteWinners";
 import TimeInput from "./TimeInput";
 
-// Converts "MM:SS", "HH:MM:SS", "MM:SS.cc" or "HH:MM:SS.cc" to milliseconds (float)
-function parseTimeInput(str) {
-  str = str.trim();
-  // Split off centiseconds if present (MM:SS.cc)
-  let centis = 0;
-  const dotIdx = str.lastIndexOf(".");
-  if (dotIdx !== -1) {
-    const centisStr = str.slice(dotIdx + 1).padEnd(2, "0").slice(0, 2);
-    centis = parseInt(centisStr, 10);
-    if (isNaN(centis) || centis < 0) return null;
-    str = str.slice(0, dotIdx);
-  }
-  const parts = str.split(":").map(Number);
-  if (parts.some((n) => isNaN(n) || n < 0)) return null;
-  if (parts.length === 2) {
-    const [mm, ss] = parts;
-    if (ss >= 60) return null;
-    return (mm * 60 + ss) * 1000 + centis * 10;
-  }
-  if (parts.length === 3) {
-    const [hh, mm, ss] = parts;
-    if (mm >= 60 || ss >= 60) return null;
-    return (hh * 3600 + mm * 60 + ss) * 1000 + centis * 10;
-  }
-  return null;
-}
-
 function generateCSV(finishers, participants, categories) {
   const participantMap = {};
-  for (const p of participants) {
-    if (p.dorsal) participantMap[String(p.dorsal).trim()] = p;
+  for (const participant of participants) {
+    if (participant.dorsal) {
+      participantMap[String(participant.dorsal).trim()] = participant;
+    }
   }
 
-  const active = finishers.filter((f) => !f.disqualified);
-  const dqd = finishers.filter((f) => f.disqualified);
+  const active = finishers.filter((finisher) => !finisher.disqualified);
+  const dqd = finishers.filter((finisher) => finisher.disqualified);
   const all = [...active, ...dqd];
 
-  const headers = ["Posicion", "Dorsal", "Nombre", "Edad", "Genero", "Distancia", "Categoria", "Tiempo", "Estado", "Motivo DQ"];
-  const rows = all.map((f, idx) => {
-    const p = participantMap[String(f.dorsal).trim()];
-    const category = p ? getCategory(p.edad, p.genero, p.distancia, categories) : "—";
+  const headers = [
+    "Posicion",
+    "Dorsal",
+    "Nombre",
+    "Edad",
+    "Genero",
+    "Distancia",
+    "Categoria",
+    "Tiempo",
+    "Estado",
+    "Motivo DQ",
+  ];
+
+  const rows = all.map((finisher, index) => {
+    const participant = participantMap[String(finisher.dorsal).trim()];
+    const category = participant
+      ? getCategory(participant.edad, participant.genero, participant.distancia, categories)
+      : "-";
+
     return [
-      f.disqualified ? "DQ" : idx + 1,
-      f.dorsal,
-      p ? p.nombre : "—",
-      p ? p.edad : "—",
-      p ? p.genero : "—",
-      p ? p.distancia : "—",
+      finisher.disqualified ? "DQ" : index + 1,
+      finisher.dorsal,
+      participant ? participant.nombre : "-",
+      participant ? participant.edad : "-",
+      participant ? participant.genero : "-",
+      participant ? participant.distancia : "-",
       category,
-      formatTime(f.elapsedMs),
-      f.disqualified ? "DQ" : "OK",
-      f.dqReason || "",
+      formatTime(finisher.elapsedMs),
+      finisher.disqualified ? "DQ" : "OK",
+      finisher.dqReason || "",
     ];
   });
 
   return [headers, ...rows]
-    .map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(","))
+    .map((row) => row.map((cell) => `"${String(cell).replace(/"/g, "\"\"")}"`).join(","))
     .join("\n");
 }
 
@@ -74,98 +71,126 @@ function downloadCSV(content, filename) {
   URL.revokeObjectURL(url);
 }
 
-export default function Results({ participants, finishers, raceStartTime, categories = DEFAULT_CATEGORIES, onReorder, onFinisherAdd, onFinisherDisqualify, onFinisherTimeUpdate, onResetResults, onResetAll }) {
+export default function Results({
+  participants,
+  finishers,
+  raceStartTime,
+  categories = DEFAULT_CATEGORIES,
+  race,
+  onReorder,
+  onFinisherAdd,
+  onFinisherDisqualify,
+  onFinisherTimeUpdate,
+  onResetResults,
+  onResetAll,
+}) {
   const [view, setView] = useState("general");
   const [editMode, setEditMode] = useState(false);
+  const [search, setSearch] = useState("");
 
-  // Missed finisher form state
   const [missedDorsal, setMissedDorsal] = useState("");
   const [missedTimeMs, setMissedTimeMs] = useState(null);
   const [missedError, setMissedError] = useState("");
   const [missedBusy, setMissedBusy] = useState(false);
 
-  // DQ panel state
-  const [dqPanel, setDqPanel] = useState(null); // dorsal | null
+  const [dqPanel, setDqPanel] = useState(null);
   const [dqReason, setDqReason] = useState("");
   const [dqBusy, setDqBusy] = useState(false);
+  const [copied, setCopied] = useState(false);
 
-  // Inline time editing state
-  const [editingTime, setEditingTime] = useState(null); // { dorsal, value, error } | null
+  const [editingTime, setEditingTime] = useState(null);
 
   const participantMap = {};
-  for (const p of participants) {
-    if (p.dorsal) participantMap[String(p.dorsal).trim()] = p;
+  for (const participant of participants) {
+    if (participant.dorsal) {
+      participantMap[String(participant.dorsal).trim()] = participant;
+    }
   }
 
-  const activeFinishers = finishers.filter((f) => !f.disqualified);
-  const dqFinishers = finishers.filter((f) => f.disqualified);
-  const finisherDorsals = new Set(finishers.map((f) => String(f.dorsal).trim()));
+  const normalizedSearch = search.trim().toLowerCase();
+  const matchesSearch = useCallback((finisher) => {
+    if (!normalizedSearch) return true;
 
-  const handleMoveUp = useCallback(
-    (index) => {
-      if (index === 0) return;
-      const next = [...activeFinishers];
-      [next[index - 1], next[index]] = [next[index], next[index - 1]];
-      onReorder([...next, ...dqFinishers]);
-    },
-    [activeFinishers, dqFinishers, onReorder]
-  );
+    const dorsal = String(finisher.dorsal || "").trim().toLowerCase();
+    const participant = participantMap[String(finisher.dorsal).trim()];
+    const nombre = String(participant?.nombre || "").toLowerCase();
+    const documento = String(participant?.documento || "").toLowerCase();
 
-  const handleMoveDown = useCallback(
-    (index) => {
-      if (index === activeFinishers.length - 1) return;
-      const next = [...activeFinishers];
-      [next[index], next[index + 1]] = [next[index + 1], next[index]];
-      onReorder([...next, ...dqFinishers]);
-    },
-    [activeFinishers, dqFinishers, onReorder]
-  );
+    return (
+      dorsal.includes(normalizedSearch) ||
+      nombre.includes(normalizedSearch) ||
+      documento.includes(normalizedSearch)
+    );
+  }, [normalizedSearch, participantMap]);
 
-  const handleDisqualify = useCallback(
-    async (dorsal, reason) => {
-      setDqBusy(true);
-      try {
-        await onFinisherDisqualify(dorsal, true, reason);
-        setDqPanel(null);
-        setDqReason("");
-      } finally {
-        setDqBusy(false);
-      }
-    },
-    [onFinisherDisqualify]
-  );
+  const activeFinishers = finishers.filter((finisher) => !finisher.disqualified);
+  const dqFinishers = finishers.filter((finisher) => finisher.disqualified);
+  const filteredActiveFinishers = activeFinishers.filter(matchesSearch);
+  const filteredDqFinishers = dqFinishers.filter(matchesSearch);
+  const filteredFinishers = finishers.filter(matchesSearch);
+  const finisherDorsals = new Set(finishers.map((finisher) => String(finisher.dorsal).trim()));
 
-  const handleUndoDQ = useCallback(
-    async (dorsal) => {
-      await onFinisherDisqualify(dorsal, false, null);
-    },
-    [onFinisherDisqualify]
-  );
+  const handleMoveUp = useCallback((index) => {
+    if (index === 0) return;
+    const next = [...filteredActiveFinishers];
+    [next[index - 1], next[index]] = [next[index], next[index - 1]];
 
-  const handleTimeEditStart = useCallback((f) => {
-    setEditingTime({ dorsal: String(f.dorsal).trim(), ms: f.elapsedMs, error: "" });
+    const filteredSet = new Set(filteredActiveFinishers.map((finisher) => String(finisher.dorsal).trim()));
+    const untouched = activeFinishers.filter((finisher) => !filteredSet.has(String(finisher.dorsal).trim()));
+    onReorder([...next, ...untouched, ...dqFinishers]);
+  }, [activeFinishers, dqFinishers, filteredActiveFinishers, onReorder]);
+
+  const handleMoveDown = useCallback((index) => {
+    if (index === filteredActiveFinishers.length - 1) return;
+    const next = [...filteredActiveFinishers];
+    [next[index], next[index + 1]] = [next[index + 1], next[index]];
+
+    const filteredSet = new Set(filteredActiveFinishers.map((finisher) => String(finisher.dorsal).trim()));
+    const untouched = activeFinishers.filter((finisher) => !filteredSet.has(String(finisher.dorsal).trim()));
+    onReorder([...next, ...untouched, ...dqFinishers]);
+  }, [activeFinishers, dqFinishers, filteredActiveFinishers, onReorder]);
+
+  const handleDisqualify = useCallback(async (dorsal, reason) => {
+    setDqBusy(true);
+    try {
+      await onFinisherDisqualify(dorsal, true, reason);
+      setDqPanel(null);
+      setDqReason("");
+    } finally {
+      setDqBusy(false);
+    }
+  }, [onFinisherDisqualify]);
+
+  const handleUndoDQ = useCallback(async (dorsal) => {
+    await onFinisherDisqualify(dorsal, false, null);
+  }, [onFinisherDisqualify]);
+
+  const handleTimeEditStart = useCallback((finisher) => {
+    setEditingTime({ dorsal: String(finisher.dorsal).trim(), ms: finisher.elapsedMs, error: "" });
   }, []);
 
   const handleTimeEditConfirm = useCallback(async () => {
     if (!editingTime) return;
     if (editingTime.ms == null) {
-      setEditingTime((prev) => ({ ...prev, error: "Tiempo inválido." }));
+      setEditingTime((prev) => ({ ...prev, error: "Tiempo invalido." }));
       return;
     }
+
     try {
       await onFinisherTimeUpdate(editingTime.dorsal, editingTime.ms);
       setEditingTime(null);
     } catch {
-      setEditingTime((prev) => ({ ...prev, error: "No se pudo guardar. Intentá de nuevo." }));
+      setEditingTime((prev) => ({ ...prev, error: "No se pudo guardar. Intenta de nuevo." }));
     }
   }, [editingTime, onFinisherTimeUpdate]);
 
-  // Find participant by dorsal — accepts "3", "03" or "003" for the same entry
   const findParticipantByDorsal = useCallback((raw) => {
     if (participantMap[raw]) return participantMap[raw];
     const num = parseInt(raw, 10);
-    if (!isNaN(num)) {
-      return participants.find((p) => p.dorsal && parseInt(p.dorsal, 10) === num) || null;
+    if (!Number.isNaN(num)) {
+      return participants.find((participant) => (
+        participant.dorsal && parseInt(participant.dorsal, 10) === num
+      )) || null;
     }
     return null;
   }, [participantMap, participants]);
@@ -173,16 +198,28 @@ export default function Results({ participants, finishers, raceStartTime, catego
   const handleAddMissed = useCallback(async () => {
     const raw = missedDorsal.trim();
 
-    if (!raw) { setMissedError("Ingresá el número de dorsal."); return; }
-    const p = findParticipantByDorsal(raw);
-    if (!p) { setMissedError(`El dorsal #${raw} no existe en la lista.`); return; }
-    const canonicalDorsal = String(p.dorsal).trim();
-    if (finisherDorsals.has(canonicalDorsal)) {
-      const pos = finishers.findIndex((f) => String(f.dorsal).trim() === canonicalDorsal) + 1;
-      setMissedError(`El dorsal #${canonicalDorsal} ya está registrado en el puesto #${pos}.`);
+    if (!raw) {
+      setMissedError("Ingresa el numero de dorsal.");
       return;
     }
-    if (missedTimeMs == null) { setMissedError("Ingresá un tiempo válido."); return; }
+
+    const participant = findParticipantByDorsal(raw);
+    if (!participant) {
+      setMissedError(`El dorsal #${raw} no existe en la lista.`);
+      return;
+    }
+
+    const canonicalDorsal = String(participant.dorsal).trim();
+    if (finisherDorsals.has(canonicalDorsal)) {
+      const pos = finishers.findIndex((finisher) => String(finisher.dorsal).trim() === canonicalDorsal) + 1;
+      setMissedError(`El dorsal #${canonicalDorsal} ya esta registrado en el puesto #${pos}.`);
+      return;
+    }
+
+    if (missedTimeMs == null) {
+      setMissedError("Ingresa un tiempo valido.");
+      return;
+    }
 
     setMissedError("");
     setMissedBusy(true);
@@ -196,8 +233,8 @@ export default function Results({ participants, finishers, raceStartTime, catego
       });
       setMissedDorsal("");
       setMissedTimeMs(null);
-    } catch (err) {
-      setMissedError("No se pudo agregar. Intentá de nuevo.");
+    } catch {
+      setMissedError("No se pudo agregar. Intenta de nuevo.");
     } finally {
       setMissedBusy(false);
     }
@@ -208,12 +245,19 @@ export default function Results({ participants, finishers, raceStartTime, catego
     downloadCSV(csv, `resultados-carrera-${new Date().toISOString().slice(0, 10)}.csv`);
   };
 
-  const distanceGroups = groupByDistance(finishers, participants, categories);
+  const handleCopyPublicResults = useCallback(async () => {
+    if (!race?.slug || !race?.isOfficial) return;
+    const publicUrl = `${window.location.origin}/resultados/${encodeURIComponent(race.slug)}`;
+    await navigator.clipboard.writeText(publicUrl);
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 1800);
+  }, [race]);
+
+  const distanceGroups = groupByDistance(filteredFinishers, participants, categories);
   const distances = Object.keys(distanceGroups).sort();
 
   return (
     <div className="results-container">
-      {/* Toolbar */}
       <div className="results-toolbar">
         <div className="view-toggle">
           <button
@@ -226,20 +270,31 @@ export default function Results({ participants, finishers, raceStartTime, catego
             className={`btn btn-tab ${view === "category" ? "btn-tab-active" : ""}`}
             onClick={() => setView("category")}
           >
-            Por Categoría
+            Por categoria
           </button>
         </div>
         <div className="results-actions">
           {view === "general" && (
             <button
               className={`btn ${editMode ? "btn-warning" : "btn-secondary"}`}
-              onClick={() => { setEditMode((v) => !v); setMissedError(""); }}
+              onClick={() => {
+                setEditMode((value) => !value);
+                setMissedError("");
+              }}
             >
-              {editMode ? "✓ Finalizar edición" : "✏️ Editar"}
+              {editMode ? "Finalizar edicion" : "Editar"}
             </button>
           )}
           <button className="btn btn-export" onClick={handleExport}>
-            ⬇ Exportar CSV
+            Exportar CSV
+          </button>
+          <button
+            className="btn btn-secondary"
+            onClick={handleCopyPublicResults}
+            disabled={!race?.isOfficial}
+            title={race?.isOfficial ? "Copiar enlace de resultados" : "Disponible cuando la carrera sea oficial"}
+          >
+            Copiar enlace de resultados
           </button>
           <button className="btn btn-warning-outline" onClick={onResetResults}>
             Limpiar resultados
@@ -250,248 +305,295 @@ export default function Results({ participants, finishers, raceStartTime, catego
         </div>
       </div>
 
+      {copied && <div className="results-copy-ok">Enlace de resultados copiado</div>}
+
+      <div className="results-searchbar">
+        <input
+          className="results-search-input"
+          type="text"
+          placeholder="Buscar por nombre, dorsal o documento..."
+          value={search}
+          onChange={(event) => setSearch(event.target.value)}
+        />
+        {search && (
+          <button
+            type="button"
+            className="results-search-clear"
+            onClick={() => setSearch("")}
+          >
+            Limpiar
+          </button>
+        )}
+      </div>
+
       {finishers.length === 0 ? (
         <div className="empty-state">
-          <div className="empty-icon">🏆</div>
-          <h2>Sin resultados aún</h2>
-          <p className="text-muted">Los resultados aparecerán aquí una vez que registres atletas en la Meta.</p>
+          <div className="empty-icon">T</div>
+          <h2>Sin resultados aun</h2>
+          <p className="text-muted">Los resultados apareceran aqui una vez que registres atletas en la Meta.</p>
         </div>
       ) : (
         <>
-      {/* Edit mode panels */}
-      {editMode && view === "general" && (
-        <>
-          <div className="edit-mode-banner">
-            Modo edición — reordenás con ▲ ▼, descalificás con DQ, o agregás un finisher omitido abajo
-          </div>
-
-          {/* DQ panel */}
-          {dqPanel && (
-            <div className="missed-finisher-panel dq-panel">
-              <h4 className="missed-finisher-title">
-                Descalificar dorsal #{dqPanel}
-                {participantMap[dqPanel] && ` — ${participantMap[dqPanel].nombre}`}
-              </h4>
-              <div className="missed-finisher-form">
-                <div className="missed-field" style={{ flex: 1 }}>
-                  <label className="missed-label">Motivo (opcional)</label>
-                  <input
-                    className="missed-input"
-                    style={{ width: "100%" }}
-                    type="text"
-                    placeholder="ej: No completó la distancia"
-                    value={dqReason}
-                    onChange={(e) => setDqReason(e.target.value)}
-                    disabled={dqBusy}
-                    autoFocus
-                    onKeyDown={(e) => { if (e.key === "Enter") handleDisqualify(dqPanel, dqReason); }}
-                  />
-                </div>
-                <button
-                  className="btn btn-danger missed-btn"
-                  onClick={() => handleDisqualify(dqPanel, dqReason)}
-                  disabled={dqBusy}
-                >
-                  {dqBusy ? "..." : "Confirmar DQ"}
-                </button>
-                <button
-                  className="btn btn-secondary missed-btn"
-                  onClick={() => { setDqPanel(null); setDqReason(""); }}
-                  disabled={dqBusy}
-                >
-                  Cancelar
-                </button>
+          {editMode && view === "general" && (
+            <>
+              <div className="edit-mode-banner">
+                Modo edicion: puedes reordenar, descalificar o agregar un finisher omitido.
               </div>
-            </div>
+
+              {dqPanel && (
+                <div className="missed-finisher-panel dq-panel">
+                  <h4 className="missed-finisher-title">
+                    Descalificar dorsal #{dqPanel}
+                    {participantMap[dqPanel] && ` - ${participantMap[dqPanel].nombre}`}
+                  </h4>
+                  <div className="missed-finisher-form">
+                    <div className="missed-field" style={{ flex: 1 }}>
+                      <label className="missed-label">Motivo</label>
+                      <input
+                        className="missed-input"
+                        style={{ width: "100%" }}
+                        type="text"
+                        placeholder="Ej: No completo la distancia"
+                        value={dqReason}
+                        onChange={(event) => setDqReason(event.target.value)}
+                        disabled={dqBusy}
+                        autoFocus
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter") handleDisqualify(dqPanel, dqReason);
+                        }}
+                      />
+                    </div>
+                    <button
+                      className="btn btn-danger missed-btn"
+                      onClick={() => handleDisqualify(dqPanel, dqReason)}
+                      disabled={dqBusy}
+                    >
+                      {dqBusy ? "..." : "Confirmar DQ"}
+                    </button>
+                    <button
+                      className="btn btn-secondary missed-btn"
+                      onClick={() => {
+                        setDqPanel(null);
+                        setDqReason("");
+                      }}
+                      disabled={dqBusy}
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              <div className="missed-finisher-panel">
+                <h4 className="missed-finisher-title">Agregar finisher omitido</h4>
+                <div className="missed-finisher-form">
+                  <div className="missed-field">
+                    <label className="missed-label">Dorsal</label>
+                    <input
+                      className="missed-input missed-input-dorsal"
+                      type="text"
+                      placeholder="042"
+                      value={missedDorsal}
+                      onChange={(event) => {
+                        setMissedDorsal(event.target.value);
+                        setMissedError("");
+                      }}
+                      disabled={missedBusy}
+                    />
+                  </div>
+                  <div className="missed-field">
+                    <label className="missed-label">Tiempo</label>
+                    <TimeInput
+                      value={missedTimeMs}
+                      onChange={(ms) => {
+                        setMissedTimeMs(ms);
+                        setMissedError("");
+                      }}
+                      disabled={missedBusy}
+                      onEnter={handleAddMissed}
+                      showCentis={false}
+                    />
+                  </div>
+                  <button
+                    className="btn btn-primary missed-btn"
+                    onClick={handleAddMissed}
+                    disabled={missedBusy}
+                  >
+                    {missedBusy ? "Agregando..." : "+ Agregar"}
+                  </button>
+                </div>
+                {missedError && <div className="input-error-msg">{missedError}</div>}
+                {(() => {
+                  const preview = missedDorsal ? findParticipantByDorsal(missedDorsal.trim()) : null;
+                  if (!preview || finisherDorsals.has(String(preview.dorsal).trim())) return null;
+                  return (
+                    <div className="missed-preview">
+                      {preview.nombre} - {preview.distancia} - {getCategory(preview.edad, preview.genero, preview.distancia, categories)}
+                    </div>
+                  );
+                })()}
+              </div>
+            </>
           )}
 
-          {/* Missed finisher form */}
-          <div className="missed-finisher-panel">
-            <h4 className="missed-finisher-title">Agregar finisher omitido</h4>
-            <div className="missed-finisher-form">
-              <div className="missed-field">
-                <label className="missed-label">Dorsal</label>
-                <input
-                  className="missed-input missed-input-dorsal"
-                  type="text"
-                  placeholder="042"
-                  value={missedDorsal}
-                  onChange={(e) => { setMissedDorsal(e.target.value); setMissedError(""); }}
-                  disabled={missedBusy}
-                />
-              </div>
-              <div className="missed-field">
-                <label className="missed-label">Tiempo</label>
-                <TimeInput
-                  value={missedTimeMs}
-                  onChange={(ms) => { setMissedTimeMs(ms); setMissedError(""); }}
-                  disabled={missedBusy}
-                  onEnter={handleAddMissed}
-                  showCentis={false}
-                />
-              </div>
-              <button
-                className="btn btn-primary missed-btn"
-                onClick={handleAddMissed}
-                disabled={missedBusy}
-              >
-                {missedBusy ? "Agregando..." : "+ Agregar"}
-              </button>
-            </div>
-            {missedError && <div className="input-error-msg">{missedError}</div>}
-            {(() => {
-              const prev = missedDorsal ? findParticipantByDorsal(missedDorsal.trim()) : null;
-              if (!prev || finisherDorsals.has(String(prev.dorsal).trim())) return null;
-              return (
-                <div className="missed-preview">
-                  {prev.nombre}
-                  {" · "}{prev.distancia}
-                  {" · "}{getCategory(prev.edad, prev.genero, prev.distancia, categories)}
-                </div>
-              );
-            })()}
-          </div>
-        </>
-      )}
-
-      {/* General view */}
-      {view === "general" && (
-        <div className="table-wrapper">
-          <table className="data-table results-table">
-            <thead>
-              <tr>
-                {editMode && <th></th>}
-                <th>Pos.</th>
-                <th>Dorsal</th>
-                <th>Nombre</th>
-                <th>Dist.</th>
-                <th>Categoría</th>
-                <th>Tiempo</th>
-              </tr>
-            </thead>
-            <tbody>
-              {activeFinishers.map((f, idx) => {
-                const p = participantMap[String(f.dorsal).trim()];
-                const category = p ? getCategory(p.edad, p.genero, p.distancia, categories) : "—";
-                return (
-                  <tr key={f.dorsal + f.timestamp} className={idx < 3 ? `row-top-${idx + 1}` : ""}>
-                    {editMode && (
-                      <td className="reorder-cell">
-                        <button className="reorder-btn" onClick={() => handleMoveUp(idx)} disabled={idx === 0} title="Subir">▲</button>
-                        <button className="reorder-btn" onClick={() => handleMoveDown(idx)} disabled={idx === activeFinishers.length - 1} title="Bajar">▼</button>
-                        <button
-                          className="reorder-btn dq-btn"
-                          onClick={() => { setDqPanel(String(f.dorsal).trim()); setDqReason(""); }}
-                          title="Descalificar"
-                        >DQ</button>
-                      </td>
-                    )}
-                    <td><span className={`position-badge pos-${idx + 1}`}>{idx + 1}</span></td>
-                    <td><span className="dorsal-badge">{f.dorsal}</span></td>
-                    <td className="name-cell">{p ? p.nombre : "—"}</td>
-                    <td><span className="category-tag">{p ? p.distancia : "—"}</span></td>
-                    <td><span className="category-tag">{category}</span></td>
-                    <td className="time-cell">
-                      {editMode && editingTime?.dorsal === String(f.dorsal).trim() ? (
-                        <div className="time-edit-cell">
-                          <TimeInput
-                            value={editingTime.ms}
-                            onChange={(ms) => setEditingTime((prev) => ({ ...prev, ms, error: "" }))}
-                            autoFocus
-                            onEnter={handleTimeEditConfirm}
-                          />
-                          <button className="reorder-btn time-confirm-btn" onClick={handleTimeEditConfirm} title="Confirmar">✓</button>
-                          <button className="reorder-btn" onClick={() => setEditingTime(null)} title="Cancelar">✗</button>
-                          {editingTime.error && <span className="time-edit-error">{editingTime.error}</span>}
-                        </div>
-                      ) : (
-                        <span
-                          className={editMode ? "time-cell-editable" : ""}
-                          onClick={editMode ? () => handleTimeEditStart(f) : undefined}
-                          title={editMode ? "Editar tiempo" : undefined}
-                        >
-                          {formatTime(f.elapsedMs)}
-                          {editMode && <span className="time-edit-icon">✏</span>}
-                        </span>
-                      )}
-                    </td>
+          {view === "general" && (
+            <div className="table-wrapper">
+              <table className="data-table results-table">
+                <thead>
+                  <tr>
+                    {editMode && <th></th>}
+                    <th>Pos.</th>
+                    <th>Dorsal</th>
+                    <th>Nombre</th>
+                    <th>Dist.</th>
+                    <th>Categoria</th>
+                    <th>Tiempo</th>
                   </tr>
-                );
-              })}
-              {dqFinishers.map((f) => {
-                const p = participantMap[String(f.dorsal).trim()];
-                const category = p ? getCategory(p.edad, p.genero, p.distancia, categories) : "—";
-                return (
-                  <tr key={f.dorsal + "dq"} className="row-dq">
-                    {editMode && (
-                      <td className="reorder-cell">
-                        <button
-                          className="reorder-btn undo-dq-btn"
-                          onClick={() => handleUndoDQ(String(f.dorsal).trim())}
-                          title="Quitar descalificación"
-                        >↩ DQ</button>
-                      </td>
-                    )}
-                    <td><span className="position-badge dq-badge">DQ</span></td>
-                    <td><span className="dorsal-badge">{f.dorsal}</span></td>
-                    <td className="name-cell">
-                      {p ? p.nombre : "—"}
-                      {f.dqReason && <span className="dq-reason-inline"> · {f.dqReason}</span>}
-                    </td>
-                    <td><span className="category-tag">{p ? p.distancia : "—"}</span></td>
-                    <td><span className="category-tag">{category}</span></td>
-                    <td className="time-cell">{formatTime(f.elapsedMs)}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      )}
+                </thead>
+                <tbody>
+                  {filteredActiveFinishers.map((finisher, index) => {
+                    const participant = participantMap[String(finisher.dorsal).trim()];
+                    const category = participant
+                      ? getCategory(participant.edad, participant.genero, participant.distancia, categories)
+                      : "-";
 
-      {/* Category view */}
-      {view === "category" && (
-        <div className="category-view">
-          {distances.length === 0 ? (
-            <p className="text-muted">No hay categorías con finishers.</p>
-          ) : (
-            distances.map((dist) => {
-              const byGender = getAbsoluteByGender(finishers, participants, dist);
-              const absoluteDorsals = new Set([
-                ...byGender.M.map((f) => String(f.dorsal).trim()),
-                ...byGender.F.map((f) => String(f.dorsal).trim()),
-              ]);
-              return (
-                <div key={dist} className="distance-section">
-                  <div className="distance-section-header">
-                    <span className="distance-badge">{dist}</span>
-                  </div>
-
-                  {/* Ganadores absolutos por género */}
-                  <AbsoluteWinners distance={dist} byGender={byGender} />
-
-                  {/* Divisor */}
-                  <div className="category-section-divider">Por Categoría</div>
-
-                  {sortedCategories(distanceGroups[dist], dist, categories).map((cat) => {
-                    const filtered = distanceGroups[dist][cat]
-                      .filter((f) => !absoluteDorsals.has(String(f.dorsal).trim()))
-                      .map((f, i) => ({ ...f, categoryPosition: i + 1 }));
                     return (
-                      <CategoryResults
-                        key={cat}
-                        categoryName={cat}
-                        finishers={filtered}
-                        participants={participants}
-                      />
+                      <tr key={finisher.dorsal + finisher.timestamp} className={index < 3 ? `row-top-${index + 1}` : ""}>
+                        {editMode && (
+                          <td className="reorder-cell">
+                            <button className="reorder-btn" onClick={() => handleMoveUp(index)} disabled={index === 0} title="Subir">^</button>
+                            <button className="reorder-btn" onClick={() => handleMoveDown(index)} disabled={index === filteredActiveFinishers.length - 1} title="Bajar">v</button>
+                            <button
+                              className="reorder-btn dq-btn"
+                              onClick={() => {
+                                setDqPanel(String(finisher.dorsal).trim());
+                                setDqReason("");
+                              }}
+                              title="Descalificar"
+                            >
+                              DQ
+                            </button>
+                          </td>
+                        )}
+                        <td><span className={`position-badge pos-${index + 1}`}>{index + 1}</span></td>
+                        <td><span className="dorsal-badge">{finisher.dorsal}</span></td>
+                        <td className="name-cell">{participant ? participant.nombre : "-"}</td>
+                        <td><span className="category-tag">{participant ? participant.distancia : "-"}</span></td>
+                        <td><span className="category-tag">{category}</span></td>
+                        <td className="time-cell">
+                          {editMode && editingTime?.dorsal === String(finisher.dorsal).trim() ? (
+                            <div className="time-edit-cell">
+                              <TimeInput
+                                value={editingTime.ms}
+                                onChange={(ms) => setEditingTime((prev) => ({ ...prev, ms, error: "" }))}
+                                autoFocus
+                                onEnter={handleTimeEditConfirm}
+                              />
+                              <button className="reorder-btn time-confirm-btn" onClick={handleTimeEditConfirm} title="Confirmar">OK</button>
+                              <button className="reorder-btn" onClick={() => setEditingTime(null)} title="Cancelar">X</button>
+                              {editingTime.error && <span className="time-edit-error">{editingTime.error}</span>}
+                            </div>
+                          ) : (
+                            <span
+                              className={editMode ? "time-cell-editable" : ""}
+                              onClick={editMode ? () => handleTimeEditStart(finisher) : undefined}
+                              title={editMode ? "Editar tiempo" : undefined}
+                            >
+                              {formatTime(finisher.elapsedMs)}
+                              {editMode && <span className="time-edit-icon"> E</span>}
+                            </span>
+                          )}
+                        </td>
+                      </tr>
                     );
                   })}
-                </div>
-              );
-            })
+
+                  {filteredDqFinishers.map((finisher) => {
+                    const participant = participantMap[String(finisher.dorsal).trim()];
+                    const category = participant
+                      ? getCategory(participant.edad, participant.genero, participant.distancia, categories)
+                      : "-";
+
+                    return (
+                      <tr key={finisher.dorsal + "-dq"} className="row-dq">
+                        {editMode && (
+                          <td className="reorder-cell">
+                            <button
+                              className="reorder-btn undo-dq-btn"
+                              onClick={() => handleUndoDQ(String(finisher.dorsal).trim())}
+                              title="Quitar descalificacion"
+                            >
+                              Undo DQ
+                            </button>
+                          </td>
+                        )}
+                        <td><span className="position-badge dq-badge">DQ</span></td>
+                        <td><span className="dorsal-badge">{finisher.dorsal}</span></td>
+                        <td className="name-cell">
+                          {participant ? participant.nombre : "-"}
+                          {finisher.dqReason && <span className="dq-reason-inline"> - {finisher.dqReason}</span>}
+                        </td>
+                        <td><span className="category-tag">{participant ? participant.distancia : "-"}</span></td>
+                        <td><span className="category-tag">{category}</span></td>
+                        <td className="time-cell">{formatTime(finisher.elapsedMs)}</td>
+                      </tr>
+                    );
+                  })}
+
+                  {filteredActiveFinishers.length === 0 && filteredDqFinishers.length === 0 && (
+                    <tr>
+                      <td colSpan={editMode ? 7 : 6} className="results-empty-filter">
+                        No hay resultados que coincidan con la busqueda.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
           )}
-        </div>
-      )}
+
+          {view === "category" && (
+            <div className="category-view">
+              {distances.length === 0 ? (
+                <p className="text-muted">No hay categorias con finishers para este filtro.</p>
+              ) : (
+                distances.map((distance) => {
+                  const byGender = getAbsoluteByGender(finishers, participants, distance);
+                  const absoluteDorsals = new Set([
+                    ...byGender.M.map((finisher) => String(finisher.dorsal).trim()),
+                    ...byGender.F.map((finisher) => String(finisher.dorsal).trim()),
+                  ]);
+
+                  return (
+                    <div key={distance} className="distance-section">
+                      <div className="distance-section-header">
+                        <span className="distance-badge">{distance}</span>
+                      </div>
+
+                      <AbsoluteWinners distance={distance} byGender={byGender} />
+
+                      <div className="category-section-divider">Por categoria</div>
+
+                      {sortedCategories(distanceGroups[distance], distance, categories).map((categoryName) => {
+                        const filtered = distanceGroups[distance][categoryName]
+                          .filter((finisher) => !absoluteDorsals.has(String(finisher.dorsal).trim()))
+                          .map((finisher, index) => ({ ...finisher, categoryPosition: index + 1 }));
+
+                        return (
+                          <CategoryResults
+                            key={categoryName}
+                            categoryName={categoryName}
+                            finishers={filtered}
+                            participants={participants}
+                          />
+                        );
+                      })}
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          )}
         </>
       )}
     </div>

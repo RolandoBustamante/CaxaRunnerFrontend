@@ -21,7 +21,7 @@ function useDebounce(value, delay) {
 }
 
 // ── Search result card ────────────────────────────────────────────────────
-function ParticipantCard({ participant, onUpdate, categories = DEFAULT_CATEGORIES }) {
+function ParticipantCard({ participant, onUpdate, categories = DEFAULT_CATEGORIES, raceId }) {
   const [dorsalInput, setDorsalInput] = useState("");
   const [assigning, setAssigning] = useState(false);
   const [assignError, setAssignError] = useState("");
@@ -39,7 +39,7 @@ function ParticipantCard({ participant, onUpdate, categories = DEFAULT_CATEGORIE
     setAssignError("");
     setBusy(true);
     try {
-      await api.assignDorsal(p.id, d);
+      await api.assignDorsal(p.id, d, raceId);
       setDorsalInput("");
       setAssigning(false);
       onUpdate();
@@ -59,7 +59,7 @@ function ParticipantCard({ participant, onUpdate, categories = DEFAULT_CATEGORIE
   const handleToggleKit = async () => {
     setBusy(true);
     try {
-      await api.toggleKit(p.id);
+      await api.toggleKit(p.id, raceId);
       onUpdate();
     } catch (err) {
       console.error(err);
@@ -71,7 +71,7 @@ function ParticipantCard({ participant, onUpdate, categories = DEFAULT_CATEGORIE
   const handleToggleCarta = async () => {
     setBusy(true);
     try {
-      await api.toggleCarta(p.id);
+      await api.toggleCarta(p.id, raceId);
       onUpdate();
     } catch (err) {
       console.error(err);
@@ -174,7 +174,7 @@ function ParticipantCard({ participant, onUpdate, categories = DEFAULT_CATEGORIE
 }
 
 // ── Main Acreditacion component ────────────────────────────────────────────
-export default function Acreditacion({ participants, categories = DEFAULT_CATEGORIES, onUpdate }) {
+export default function Acreditacion({ participants, categories = DEFAULT_CATEGORIES, onUpdate, raceId }) {
   const [query, setQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [searching, setSearching] = useState(false);
@@ -207,7 +207,7 @@ export default function Acreditacion({ participants, categories = DEFAULT_CATEGO
     }
     let cancelled = false;
     setSearching(true);
-    api.searchParticipant(debouncedQuery)
+    api.searchParticipant(debouncedQuery, raceId)
       .then((results) => {
         if (!cancelled) setSearchResults(results);
       })
@@ -218,7 +218,7 @@ export default function Acreditacion({ participants, categories = DEFAULT_CATEGO
         if (!cancelled) setSearching(false);
       });
     return () => { cancelled = true; };
-  }, [debouncedQuery]);
+  }, [debouncedQuery, raceId]);
 
   // Refresh search results + parent state after any update
   const handleUpdate = useCallback(async () => {
@@ -226,11 +226,11 @@ export default function Acreditacion({ participants, categories = DEFAULT_CATEGO
     // Re-run search to reflect latest data
     if (debouncedQuery.trim()) {
       try {
-        const results = await api.searchParticipant(debouncedQuery);
+        const results = await api.searchParticipant(debouncedQuery, raceId);
         setSearchResults(results);
       } catch (_) {}
     }
-  }, [onUpdate, debouncedQuery]);
+  }, [onUpdate, debouncedQuery, raceId]);
 
   // Lookup DNI from RENIEC and fill nombre
   const lookupDni = useCallback(async (dni) => {
@@ -280,7 +280,7 @@ export default function Acreditacion({ participants, categories = DEFAULT_CATEGO
         genero,
         distancia,
         dorsal: dorsal.trim() || null,
-      }]);
+      }], raceId);
       await onUpdate();
       setShowAddForm(false);
       setAddForm(EMPTY_FORM);
@@ -291,7 +291,7 @@ export default function Acreditacion({ participants, categories = DEFAULT_CATEGO
     } finally {
       setAddBusy(false);
     }
-  }, [addForm, onUpdate]);
+  }, [addForm, onUpdate, raceId]);
 
   // Stats
   const total = participants.length;
@@ -325,7 +325,7 @@ export default function Acreditacion({ participants, categories = DEFAULT_CATEGO
     if (!dorsal) { setEditingDorsalError("El dorsal no puede estar vacío."); return; }
     setEditingDorsalBusy(true);
     try {
-      await api.assignDorsal(id, dorsal);
+      await api.assignDorsal(id, dorsal, raceId);
       await onUpdate();
       cancelEditDorsal();
     } catch (err) {
@@ -337,7 +337,7 @@ export default function Acreditacion({ participants, categories = DEFAULT_CATEGO
 
   const handleToggleKitTable = async (id) => {
     try {
-      await api.toggleKit(id);
+      await api.toggleKit(id, raceId);
       await onUpdate();
     } catch (err) {
       console.error(err);
@@ -346,7 +346,7 @@ export default function Acreditacion({ participants, categories = DEFAULT_CATEGO
 
   const handleToggleCartaTable = async (id) => {
     try {
-      await api.toggleCarta(id);
+      await api.toggleCarta(id, raceId);
       await onUpdate();
     } catch (err) {
       console.error(err);
@@ -398,7 +398,13 @@ export default function Acreditacion({ participants, categories = DEFAULT_CATEGO
             </div>
           )}
           {searchResults.map((p) => (
-            <ParticipantCard key={p.id} participant={p} onUpdate={handleUpdate} categories={categories} />
+            <ParticipantCard
+              key={p.id}
+              participant={p}
+              onUpdate={handleUpdate}
+              categories={categories}
+              raceId={raceId}
+            />
           ))}
         </div>
 

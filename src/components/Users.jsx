@@ -4,6 +4,7 @@ import { confirmDialog } from "../utils/dialog";
 
 export default function Users() {
   const [users, setUsers] = useState([]);
+  const [races, setRaces] = useState([]);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState(null);
@@ -12,8 +13,12 @@ export default function Users() {
 
   async function fetchUsers() {
     try {
-      const data = await api.getUsers();
-      setUsers(data);
+      const [usersData, racesData] = await Promise.all([
+        api.getUsers(),
+        api.getRaces(),
+      ]);
+      setUsers(usersData);
+      setRaces(racesData);
     } catch (err) {
       setError(err.message);
     }
@@ -49,6 +54,27 @@ export default function Users() {
     try {
       await api.deleteUser(id);
       fetchUsers();
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
+  async function handleAssignRace(userId, raceId) {
+    if (!raceId) return;
+    setError(null);
+    try {
+      await api.assignUserToRace(userId, Number(raceId));
+      await fetchUsers();
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
+  async function handleRemoveRace(userId, raceId) {
+    setError(null);
+    try {
+      await api.removeUserFromRace(userId, raceId);
+      await fetchUsers();
     } catch (err) {
       setError(err.message);
     }
@@ -99,6 +125,7 @@ export default function Users() {
               <tr>
                 <th>Usuario</th>
                 <th>Rol</th>
+                <th>Carreras</th>
                 <th>Creado</th>
                 <th></th>
               </tr>
@@ -111,6 +138,46 @@ export default function Users() {
                     <span className={`role-badge role-${u.role.toLowerCase()}`}>
                       {u.role}
                     </span>
+                  </td>
+                  <td>
+                    {u.role === "MASTER" ? (
+                      <span className="users-all-races">Acceso total</span>
+                    ) : (
+                      <div className="user-races-cell">
+                        <div className="user-race-list">
+                          {u.races?.length ? u.races.map((race) => (
+                            <button
+                              key={race.id}
+                              type="button"
+                              className="user-race-chip"
+                              onClick={() => handleRemoveRace(u.id, race.id)}
+                              title="Quitar asignacion"
+                            >
+                              {race.name} x
+                            </button>
+                          )) : (
+                            <span className="text-muted">Sin carreras</span>
+                          )}
+                        </div>
+                        <select
+                          className="users-race-select"
+                          defaultValue=""
+                          onChange={(e) => {
+                            handleAssignRace(u.id, e.target.value);
+                            e.target.value = "";
+                          }}
+                        >
+                          <option value="">Asignar carrera...</option>
+                          {races
+                            .filter((race) => !(u.races || []).some((assigned) => assigned.id === race.id))
+                            .map((race) => (
+                              <option key={race.id} value={race.id}>
+                                {race.name}
+                              </option>
+                            ))}
+                        </select>
+                      </div>
+                    )}
                   </td>
                   <td>{new Date(u.createdAt).toLocaleDateString("es-PE")}</td>
                   <td>

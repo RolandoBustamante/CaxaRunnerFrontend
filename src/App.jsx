@@ -7,6 +7,7 @@ import Login from "./components/Login";
 import Users from "./components/Users";
 import CronometroTab from "./components/CronometroTab";
 import CategoryConfig from "./components/CategoryConfig";
+import RaceSelector from "./components/RaceSelector";
 import { api } from "./api";
 import { confirmDialog } from "./utils/dialog";
 import { DEFAULT_CATEGORIES } from "./utils/categories";
@@ -40,6 +41,11 @@ export default function App() {
       return null;
     }
   });
+  const [races, setRaces] = useState([]);
+  const [selectedRaceId, setSelectedRaceId] = useState(() => {
+    const saved = localStorage.getItem("selectedRaceId");
+    return saved ? Number(saved) : null;
+  });
   const [activeTab, setActiveTab] = useState("participantes");
   const [raceState, setRaceState] = useState({
     raceStarted: false,
@@ -51,6 +57,9 @@ export default function App() {
   const [categories, setCategories] = useState(DEFAULT_CATEGORIES);
   const [loading, setLoading] = useState(!!currentUser);
   const [error, setError] = useState(null);
+  const [creatingRace, setCreatingRace] = useState(false);
+  const [createRaceOpen, setCreateRaceOpen] = useState(false);
+  const [newRaceName, setNewRaceName] = useState("");
   const pollRef = useRef(null);
   const errorCount = useRef(0);
   const raceClockRef = useRef({ raceStartTime: null, startPerf: null, baseElapsed: 0 });
@@ -70,9 +79,19 @@ export default function App() {
   }, [theme]);
 
   useEffect(() => {
+    if (selectedRaceId == null) {
+      localStorage.removeItem("selectedRaceId");
+      return;
+    }
+    localStorage.setItem("selectedRaceId", String(selectedRaceId));
+  }, [selectedRaceId]);
+
+  useEffect(() => {
     const handler = () => {
       stopPolling();
       setCurrentUser(null);
+      setRaces([]);
+      setSelectedRaceId(null);
       setActiveTab("participantes");
     };
     window.addEventListener("auth:logout", handler);
@@ -80,9 +99,21 @@ export default function App() {
   }, [stopPolling]);
 
   const fetchRace = useCallback(async () => {
+    if (selectedRaceId == null) {
+      setRaceState({
+        raceStarted: false,
+        raceStartTime: null,
+        participants: [],
+        finishers: [],
+      });
+      setCategories(DEFAULT_CATEGORIES);
+      setLoading(false);
+      return;
+    }
+
     try {
       const requestStartedAt = Date.now();
-      const data = await api.getRace();
+      const data = await api.getRace(selectedRaceId);
       const requestEndedAt = Date.now();
       if (typeof data.serverNow === "number") {
         const estimatedServerNow = data.serverNow + (requestEndedAt - requestStartedAt) / 2;
@@ -101,7 +132,23 @@ export default function App() {
     } finally {
       setLoading(false);
     }
-  }, [stopPolling]);
+  }, [selectedRaceId, stopPolling]);
+
+  const refreshRaces = useCallback(async () => {
+    if (!currentUser) return [];
+
+    const data = await api.getRaces();
+    setRaces(data);
+
+    const availableIds = new Set(data.map((race) => race.id));
+    setSelectedRaceId((prev) => {
+      if (prev != null && availableIds.has(prev)) return prev;
+      if (data.length === 0) return null;
+      return data[0].id;
+    });
+
+    return data;
+  }, [currentUser]);
 
   const startPolling = useCallback(() => {
     stopPolling();
@@ -117,12 +164,27 @@ export default function App() {
       return;
     }
 
-    fetchRace();
-    api.getCategories().then((data) => setCategories(data.categories)).catch(() => {});
-  }, [currentUser, fetchRace, stopPolling]);
+    setLoading(true);
+    refreshRaces().catch((err) => {
+      setError(err.message);
+      setLoading(false);
+    });
+  }, [currentUser, refreshRaces, stopPolling]);
 
   useEffect(() => {
-    if (!currentUser) {
+    if (!currentUser || selectedRaceId == null) {
+      setLoading(false);
+      return;
+    }
+
+    fetchRace();
+    api.getCategories(selectedRaceId)
+      .then((data) => setCategories(data.categories))
+      .catch(() => {});
+  }, [currentUser, selectedRaceId, fetchRace]);
+
+  useEffect(() => {
+    if (!currentUser || selectedRaceId == null) {
       stopPolling();
       return;
     }
@@ -133,7 +195,7 @@ export default function App() {
     }
 
     stopPolling();
-  }, [activeTab, currentUser, startPolling, stopPolling]);
+  }, [activeTab, currentUser, selectedRaceId, startPolling, stopPolling]);
 
   useEffect(() => {
     const { raceStarted, raceClosed, raceStartTime, raceEndTime } = raceState;
@@ -188,21 +250,25 @@ export default function App() {
   const handleLogout = useCallback(() => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
+    localStorage.removeItem("selectedRaceId");
     stopPolling();
     setCurrentUser(null);
+    setRaces([]);
+    setSelectedRaceId(null);
     setActiveTab("participantes");
   }, [stopPolling]);
 
   const handleParticipantsLoad = useCallback(async (participants) => {
-    await api.uploadParticipants(participants);
+    await api.uploadParticipants(participants, selectedRaceId);
     await fetchRace();
-  }, [fetchRace]);
+  }, [fetchRace, selectedRaceId]);
 
   const handleStartRace = useCallback(async () => {
-    await api.startRace();
+    await api.startRace(selectedRaceId);
     await fetchRace();
+    await refreshRaces();
     setActiveTab("meta");
-  }, [fetchRace]);
+  }, [fetchRace, refreshRaces, selectedRaceId]);
 
   const handleCloseRace = useCallback(async () => {
     const ok = await confirmDialog({
@@ -211,9 +277,10 @@ export default function App() {
       confirmText: "Cerrar carrera",
     });
     if (!ok) return;
-    await api.closeRace();
+    await api.closeRace(selectedRaceId);
     await fetchRace();
-  }, [fetchRace]);
+    await refreshRaces();
+  }, [fetchRace, refreshRaces, selectedRaceId]);
 
   const handleResetResults = useCallback(async () => {
     const ok = await confirmDialog({
@@ -222,10 +289,11 @@ export default function App() {
       confirmText: "Limpiar",
     });
     if (!ok) return;
-    await api.resetResults();
+    await api.resetResults(selectedRaceId);
     await fetchRace();
+    await refreshRaces();
     setActiveTab("meta");
-  }, [fetchRace]);
+  }, [fetchRace, refreshRaces, selectedRaceId]);
 
   const handleResetAll = useCallback(async () => {
     const ok = await confirmDialog({
@@ -234,46 +302,64 @@ export default function App() {
       confirmText: "Resetear todo",
     });
     if (!ok) return;
-    await api.resetRace();
+    await api.resetRace(selectedRaceId);
     await fetchRace();
+    await refreshRaces();
     setActiveTab("participantes");
-  }, [fetchRace]);
+  }, [fetchRace, refreshRaces, selectedRaceId]);
 
   const handleFinisherAdd = useCallback(async (finisher) => {
     const serverTimestamp = Math.round(finisher.timestamp + serverOffsetRef.current);
-    await api.addFinisher(finisher.dorsal, serverTimestamp, finisher.elapsedMs);
+    await api.addFinisher(finisher.dorsal, serverTimestamp, finisher.elapsedMs, selectedRaceId);
     await fetchRace();
-  }, [fetchRace]);
+  }, [fetchRace, selectedRaceId]);
 
   const handleMissedFinisherAdd = useCallback(async (finisher) => {
-    await api.addMissedFinisher(finisher.dorsal, finisher.timestamp, finisher.elapsedMs);
+    await api.addMissedFinisher(finisher.dorsal, finisher.timestamp, finisher.elapsedMs, selectedRaceId);
     await fetchRace();
-  }, [fetchRace]);
+  }, [fetchRace, selectedRaceId]);
 
   const handleFinisherRemove = useCallback(async (dorsal) => {
-    await api.removeFinisher(dorsal);
+    await api.removeFinisher(dorsal, selectedRaceId);
     await fetchRace();
-  }, [fetchRace]);
+  }, [fetchRace, selectedRaceId]);
 
   const handleReorder = useCallback(async (reordered) => {
     setRaceState((prev) => ({ ...prev, finishers: reordered }));
-    await api.reorderFinishers(reordered);
+    await api.reorderFinishers(reordered, selectedRaceId);
     await fetchRace();
-  }, [fetchRace]);
+  }, [fetchRace, selectedRaceId]);
 
   const handleFinisherDisqualify = useCallback(async (dorsal, disqualified, reason) => {
-    await api.disqualifyFinisher(dorsal, disqualified, reason);
+    await api.disqualifyFinisher(dorsal, disqualified, reason, selectedRaceId);
     await fetchRace();
-  }, [fetchRace]);
+  }, [fetchRace, selectedRaceId]);
 
   const handleFinisherTimeUpdate = useCallback(async (dorsal, elapsedMs) => {
-    await api.updateFinisherTime(dorsal, elapsedMs, raceState.raceStartTime);
+    await api.updateFinisherTime(dorsal, elapsedMs, raceState.raceStartTime, selectedRaceId);
     await fetchRace();
-  }, [fetchRace, raceState.raceStartTime]);
+  }, [fetchRace, raceState.raceStartTime, selectedRaceId]);
 
   const handleAcreditacionUpdate = useCallback(async () => {
     await fetchRace();
   }, [fetchRace]);
+
+  const handleCreateRace = useCallback(async () => {
+    const name = newRaceName.trim();
+    if (!name) return;
+
+    setCreatingRace(true);
+    try {
+      const race = await api.createRace({ name });
+      await refreshRaces();
+      setSelectedRaceId(race.id);
+      setActiveTab("participantes");
+      setCreateRaceOpen(false);
+      setNewRaceName("");
+    } finally {
+      setCreatingRace(false);
+    }
+  }, [newRaceName, refreshRaces]);
 
   if (!currentUser) return <Login onLogin={handleLogin} />;
 
@@ -289,6 +375,7 @@ export default function App() {
   }
 
   const { raceStarted, raceClosed, raceStartTime, participants, finishers } = raceState;
+  const selectedRace = races.find((race) => race.id === selectedRaceId) || null;
   const TABS = getTabs(currentUser.role, raceStarted, raceClosed);
 
   return (
@@ -304,6 +391,10 @@ export default function App() {
       <header className="navbar">
         <div className="navbar-brand">
           <img src="/crlogo-horizontal.svg" alt="Cajamarca Runners" className="brand-logo" />
+        </div>
+
+        <div className="navbar-race-pill">
+          {selectedRace ? selectedRace.name : "Sin carrera"}
         </div>
 
         <nav className="tab-nav">
@@ -356,6 +447,99 @@ export default function App() {
       </header>
 
       <main className="main-content">
+        <RaceSelector
+          races={races}
+          selectedRaceId={selectedRaceId}
+          onSelectRace={(raceId) => {
+            setSelectedRaceId(raceId);
+            setActiveTab("participantes");
+          }}
+          currentUser={currentUser}
+          onCreateRace={() => setCreateRaceOpen(true)}
+          creatingRace={creatingRace}
+        />
+
+        {createRaceOpen && (
+          <div
+            className="app-dialog-backdrop"
+            onClick={() => {
+              if (!creatingRace) {
+                setCreateRaceOpen(false);
+                setNewRaceName("");
+              }
+            }}
+          >
+            <div
+              className="app-dialog"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <div className="app-dialog-header">
+                <h3>Nueva carrera</h3>
+                <button
+                  type="button"
+                  className="app-dialog-close"
+                  onClick={() => {
+                    if (!creatingRace) {
+                      setCreateRaceOpen(false);
+                      setNewRaceName("");
+                    }
+                  }}
+                  disabled={creatingRace}
+                >
+                  X
+                </button>
+              </div>
+
+              <div className="app-dialog-body">
+                <label className="login-label" htmlFor="new-race-name">Nombre</label>
+                <input
+                  id="new-race-name"
+                  className="login-input"
+                  type="text"
+                  value={newRaceName}
+                  onChange={(event) => setNewRaceName(event.target.value)}
+                  placeholder="Ej: 10K Cajamarca 2026"
+                  autoFocus
+                  disabled={creatingRace}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") {
+                      handleCreateRace();
+                    }
+                  }}
+                />
+              </div>
+
+              <div className="app-dialog-actions">
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => {
+                    setCreateRaceOpen(false);
+                    setNewRaceName("");
+                  }}
+                  disabled={creatingRace}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={handleCreateRace}
+                  disabled={creatingRace || !newRaceName.trim()}
+                >
+                  {creatingRace ? "Creando..." : "Crear carrera"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {selectedRaceId == null ? (
+          <div className="card race-selector-empty-panel">
+            No hay una carrera disponible para trabajar en este usuario.
+          </div>
+        ) : (
+          <>
         {activeTab === "participantes" && (
           <ParticipantUpload
             participants={participants}
@@ -367,6 +551,7 @@ export default function App() {
             participants={participants}
             categories={categories}
             onUpdate={handleAcreditacionUpdate}
+            raceId={selectedRaceId}
           />
         )}
         {activeTab === "meta" && (
@@ -390,6 +575,7 @@ export default function App() {
             finishers={finishers}
             raceStartTime={raceStartTime}
             categories={categories}
+            race={selectedRace}
             onReorder={handleReorder}
             onFinisherAdd={handleMissedFinisherAdd}
             onFinisherDisqualify={handleFinisherDisqualify}
@@ -403,11 +589,20 @@ export default function App() {
             raceClosed={raceClosed}
             finishers={finishers}
             elapsed={raceElapsed}
+            race={selectedRace}
           />
         )}
         {activeTab === "usuarios" && currentUser.role === "MASTER" && <Users />}
         {activeTab === "configuracion" && currentUser.role === "MASTER" && (
-          <CategoryConfig categories={categories} onCategoriesChange={setCategories} />
+          <CategoryConfig
+            categories={categories}
+            onCategoriesChange={setCategories}
+            raceId={selectedRaceId}
+            race={selectedRace}
+            onRaceUpdated={refreshRaces}
+          />
+        )}
+          </>
         )}
       </main>
     </div>
