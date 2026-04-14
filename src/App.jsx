@@ -18,16 +18,16 @@ const POLLING_TABS = new Set(["meta", "resultados", "cronometro"]);
 function getTabs(role, raceStarted, raceClosed) {
   const tabs = [
     { id: "participantes", label: "Participantes" },
-    { id: "acreditacion", label: "AcreditaciÃ³n" },
+    { id: "acreditacion", label: "Acreditacion" },
     { id: "meta", label: "Meta" },
     { id: "resultados", label: "Resultados" },
   ];
   if (raceStarted && !raceClosed) {
-    tabs.splice(2, 0, { id: "cronometro", label: "CronÃ³metro" });
+    tabs.splice(2, 0, { id: "cronometro", label: "Cronometro" });
   }
   if (role === "MASTER") {
     tabs.push({ id: "usuarios", label: "Usuarios" });
-    tabs.push({ id: "configuracion", label: "ConfiguraciÃ³n" });
+    tabs.push({ id: "configuracion", label: "Configuracion" });
   }
   return tabs;
 }
@@ -414,14 +414,6 @@ export default function App() {
 
   return (
     <div className="app">
-      <button
-        className="theme-toggle"
-        onClick={() => setTheme((t) => (t === "dark" ? "light" : "dark"))}
-        title={theme === "dark" ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
-      >
-        {theme === "dark" ? "â˜€ï¸" : "ðŸŒ™"}
-      </button>
-
       <header className="navbar">
         <div className="navbar-brand">
           <img src="/crlogo-horizontal.svg" alt="Cajamarca Runners" className="brand-logo" />

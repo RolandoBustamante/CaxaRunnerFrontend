@@ -22,14 +22,16 @@ export default function CategoryConfig({
   );
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState(null);
+  const [eventDate, setEventDate] = useState(race?.eventDate ? String(race.eventDate).slice(0, 10) : "");
 
   useEffect(() => {
     setRows(categories.map((category) => ({
       ...category,
       maxAge: category.maxAge === null ? "" : category.maxAge,
     })));
+    setEventDate(race?.eventDate ? String(race.eventDate).slice(0, 10) : "");
     setMsg(null);
-  }, [categories]);
+  }, [categories, race?.eventDate]);
 
   function setRow(index, field, value) {
     setRows((prev) => prev.map((row, rowIndex) => (
@@ -137,6 +139,21 @@ export default function CategoryConfig({
     }
   }
 
+  async function handleSaveRaceInfo() {
+    if (!raceId) return;
+
+    setBusy(true);
+    try {
+      await api.updateRace(raceId, { eventDate: eventDate || null });
+      setMsg({ type: "ok", text: "Datos de la carrera guardados." });
+      await onRaceUpdated?.();
+    } catch (err) {
+      setMsg({ type: "error", text: err.message || "No se pudo guardar la fecha de la carrera." });
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <div className="config-container">
       <div className="section-header">
@@ -155,11 +172,28 @@ export default function CategoryConfig({
               {race.isOfficial ? "Oficial" : "Pruebas"}
             </span>
           </div>
-          {!race.isOfficial && (
-            <button className="btn btn-warning" onClick={handleMarkOfficial} disabled={busy}>
-              Marcar como oficial
+          <div className="config-race-actions">
+            <label className="config-date-field">
+              <span>Fecha de carrera</span>
+              <input
+                className="config-input"
+                type="date"
+                value={eventDate}
+                onChange={(event) => {
+                  setEventDate(event.target.value);
+                  setMsg(null);
+                }}
+              />
+            </label>
+            <button className="btn btn-secondary" onClick={handleSaveRaceInfo} disabled={busy}>
+              Guardar fecha
             </button>
-          )}
+            {!race.isOfficial && (
+              <button className="btn btn-warning" onClick={handleMarkOfficial} disabled={busy}>
+                Marcar como oficial
+              </button>
+            )}
+          </div>
         </div>
       )}
 

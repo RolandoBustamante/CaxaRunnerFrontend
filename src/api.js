@@ -8,7 +8,7 @@ async function request(method, path, body) {
   const token = getToken();
   const headers = {};
   if (body) headers["Content-Type"] = "application/json";
-  if (token) headers["Authorization"] = `Bearer ${token}`;
+  if (token) headers.Authorization = `Bearer ${token}`;
 
   const res = await fetch(`${BASE}${path}`, {
     method,
@@ -20,7 +20,7 @@ async function request(method, path, body) {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
     window.dispatchEvent(new Event("auth:logout"));
-    throw new Error("Sesión expirada");
+    throw new Error("Sesion expirada");
   }
 
   const data = await res.json();
@@ -32,7 +32,7 @@ async function requestBlob(method, path, body) {
   const token = getToken();
   const headers = {};
   if (body) headers["Content-Type"] = "application/json";
-  if (token) headers["Authorization"] = `Bearer ${token}`;
+  if (token) headers.Authorization = `Bearer ${token}`;
 
   const res = await fetch(`${BASE}${path}`, {
     method,
@@ -68,7 +68,6 @@ function withRaceId(path, raceId) {
 }
 
 export const api = {
-  // Auth
   login: (username, password) =>
     fetch(`${BASE}/auth/login`, {
       method: "POST",
@@ -76,20 +75,19 @@ export const api = {
       body: JSON.stringify({ username, password }),
     }).then(async (res) => {
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Error al iniciar sesión");
+      if (!res.ok) throw new Error(data.error || "Error al iniciar sesion");
       return data;
     }),
 
-  // Users (MASTER only)
   getUsers: () => request("GET", "/auth/users"),
   createUser: (username, password) => request("POST", "/auth/users", { username, password }),
   deleteUser: (id) => request("DELETE", `/auth/users/${id}`),
   assignUserToRace: (userId, raceId) => request("POST", `/auth/users/${idToPath(userId)}/races`, { raceId }),
   removeUserFromRace: (userId, raceId) => request("DELETE", `/auth/users/${idToPath(userId)}/races/${idToPath(raceId)}`),
 
-  // Race
   getRaces: () => request("GET", "/races"),
   createRace: (payload) => request("POST", "/races", payload),
+  updateRace: (raceId, payload) => request("PUT", `/races/${encodeURIComponent(raceId)}`, payload),
   getRace: (raceId) => request("GET", withRaceId("/race", raceId)),
   startRace: (raceId) => request("POST", "/race/start", raceId == null ? undefined : { raceId }),
   closeRace: (raceId) => request("POST", "/race/close", raceId == null ? undefined : { raceId }),
@@ -114,18 +112,15 @@ export const api = {
   downloadCertificatePdf: (slug, dorsal, documento) =>
     requestBlob("POST", `/public/${encodeURIComponent(slug)}/certificate/pdf`, { dorsal, documento }),
 
-  // Participants
   uploadParticipants: (participants, raceId) => request("POST", "/participants", { participants, raceId }),
   searchParticipant: (q, raceId) => request("GET", withRaceId(`/participants/search?q=${encodeURIComponent(q)}`, raceId)),
   assignDorsal: (id, dorsal, raceId) => request("POST", `/participants/${id}/dorsal`, { dorsal, raceId }),
   toggleKit: (id, raceId) => request("POST", `/participants/${id}/kit`, raceId == null ? undefined : { raceId }),
   toggleCarta: (id, raceId) => request("POST", `/participants/${id}/carta`, raceId == null ? undefined : { raceId }),
 
-  // Config
   getCategories: (raceId) => request("GET", withRaceId("/config/categories", raceId)),
   saveCategories: (categories, raceId) => request("PUT", "/config/categories", { categories, raceId }),
 
-  // Finishers
   addFinisher: (dorsal, timestamp, elapsedMs, raceId) =>
     request("POST", "/finishers", { dorsal, timestamp, elapsedMs, raceId }),
   addMissedFinisher: (dorsal, timestamp, elapsedMs, raceId) =>
@@ -137,7 +132,6 @@ export const api = {
   updateFinisherTime: (dorsal, elapsedMs, raceStartTime, raceId) =>
     request("PUT", `/finishers/${encodeURIComponent(dorsal)}/time`, { elapsedMs, raceStartTime, raceId }),
 
-  // DNI peruano — RENIEC vía ESSALUD
   getDni: async (dni) => {
     try {
       const res = await fetch(

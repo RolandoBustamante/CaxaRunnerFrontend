@@ -8,7 +8,8 @@ function getResultsSlug() {
 }
 
 function formatCertificateTime(value) {
-  return formatTime(value, true, true);
+  const elapsedMs = value?.timeMs ?? value;
+  return formatTime(elapsedMs, true, true);
 }
 
 function CertificatePreview({ race, certificate }) {
@@ -34,11 +35,11 @@ function CertificatePreview({ race, certificate }) {
         </p>
         <div className="certificate-name">{certificate.name}</div>
         <p className="certificate-copy certificate-copy-strong">
-          Concluyo oficialmente la distancia de <strong>{certificate.distance}</strong>, ocupando el puesto <strong>{certificate.position}</strong> del orden general, con un tiempo oficial de <strong>{formatCertificateTime(certificate.time)}</strong>.
+          Concluyo oficialmente la distancia de <strong>{certificate.distance}</strong>, ocupando el puesto <strong>{certificate.position}</strong> del orden general, con un tiempo oficial de <strong>{formatCertificateTime(certificate.timeMs)}</strong>.
         </p>
         <div className="certificate-grid">
           <div className="certificate-metric">
-            <div className="certificate-metric-value">{formatCertificateTime(certificate.time)}</div>
+            <div className="certificate-metric-value">{formatCertificateTime(certificate.timeMs)}</div>
             <div className="certificate-metric-label">Tiempo oficial</div>
           </div>
           <div className="certificate-metric">
@@ -218,7 +219,7 @@ export default function PublicResultsView() {
                         <span className="dq-reason-inline"> - {result.dqReason}</span>
                       )}
                     </td>
-                    <td className="time-cell public-results-time">{formatCertificateTime(result.time)}</td>
+                    <td className="time-cell public-results-time">{formatCertificateTime(result.timeMs)}</td>
                     <td className="public-results-action-cell">
                       <button
                         type="button"
