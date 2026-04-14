@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+﻿import { useState, useEffect, useCallback, useRef } from "react";
 import ParticipantUpload from "./components/ParticipantUpload";
 import FinishLine from "./components/FinishLine";
 import Results from "./components/Results";
@@ -18,16 +18,16 @@ const POLLING_TABS = new Set(["meta", "resultados", "cronometro"]);
 function getTabs(role, raceStarted, raceClosed) {
   const tabs = [
     { id: "participantes", label: "Participantes" },
-    { id: "acreditacion", label: "Acreditación" },
+    { id: "acreditacion", label: "AcreditaciÃ³n" },
     { id: "meta", label: "Meta" },
     { id: "resultados", label: "Resultados" },
   ];
   if (raceStarted && !raceClosed) {
-    tabs.splice(2, 0, { id: "cronometro", label: "Cronómetro" });
+    tabs.splice(2, 0, { id: "cronometro", label: "CronÃ³metro" });
   }
   if (role === "MASTER") {
     tabs.push({ id: "usuarios", label: "Usuarios" });
-    tabs.push({ id: "configuracion", label: "Configuración" });
+    tabs.push({ id: "configuracion", label: "ConfiguraciÃ³n" });
   }
   return tabs;
 }
@@ -60,10 +60,13 @@ export default function App() {
   const [creatingRace, setCreatingRace] = useState(false);
   const [createRaceOpen, setCreateRaceOpen] = useState(false);
   const [newRaceName, setNewRaceName] = useState("");
+  const [newRaceDate, setNewRaceDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
   const pollRef = useRef(null);
   const errorCount = useRef(0);
   const raceClockRef = useRef({ raceStartTime: null, startPerf: null, baseElapsed: 0 });
   const serverOffsetRef = useRef(0);
+  const userMenuRef = useRef(null);
   const MAX_ERRORS = 3;
 
   const stopPolling = useCallback(() => {
@@ -93,10 +96,32 @@ export default function App() {
       setRaces([]);
       setSelectedRaceId(null);
       setActiveTab("participantes");
+      setUserMenuOpen(false);
     };
     window.addEventListener("auth:logout", handler);
     return () => window.removeEventListener("auth:logout", handler);
   }, [stopPolling]);
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
+        setUserMenuOpen(false);
+      }
+    }
+
+    function handleEscape(event) {
+      if (event.key === "Escape") {
+        setUserMenuOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleEscape);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, []);
 
   const fetchRace = useCallback(async () => {
     if (selectedRaceId == null) {
@@ -123,7 +148,7 @@ export default function App() {
       setError(null);
       errorCount.current = 0;
     } catch (err) {
-      if (err.message === "Sesión expirada") return;
+      if (err.message === "SesiÃ³n expirada") return;
       errorCount.current += 1;
       if (errorCount.current >= MAX_ERRORS) {
         stopPolling();
@@ -256,6 +281,7 @@ export default function App() {
     setRaces([]);
     setSelectedRaceId(null);
     setActiveTab("participantes");
+    setUserMenuOpen(false);
   }, [stopPolling]);
 
   const handleParticipantsLoad = useCallback(async (participants) => {
@@ -272,8 +298,8 @@ export default function App() {
 
   const handleCloseRace = useCallback(async () => {
     const ok = await confirmDialog({
-      title: "¿Cerrar la carrera?",
-      text: "Ya no se podrán registrar más dorsales.",
+      title: "Â¿Cerrar la carrera?",
+      text: "Ya no se podrÃ¡n registrar mÃ¡s dorsales.",
       confirmText: "Cerrar carrera",
     });
     if (!ok) return;
@@ -284,8 +310,8 @@ export default function App() {
 
   const handleResetResults = useCallback(async () => {
     const ok = await confirmDialog({
-      title: "¿Limpiar resultados?",
-      text: "Se borrarán todos los finishers y se reiniciará la carrera. Los participantes se mantienen.",
+      title: "Â¿Limpiar resultados?",
+      text: "Se borrarÃ¡n todos los finishers y se reiniciarÃ¡ la carrera. Los participantes se mantienen.",
       confirmText: "Limpiar",
     });
     if (!ok) return;
@@ -297,8 +323,8 @@ export default function App() {
 
   const handleResetAll = useCallback(async () => {
     const ok = await confirmDialog({
-      title: "¿Resetear todo?",
-      text: "Se borrarán participantes, resultados y el estado de la carrera. Esta acción no se puede deshacer.",
+      title: "Â¿Resetear todo?",
+      text: "Se borrarÃ¡n participantes, resultados y el estado de la carrera. Esta acciÃ³n no se puede deshacer.",
       confirmText: "Resetear todo",
     });
     if (!ok) return;
@@ -350,16 +376,17 @@ export default function App() {
 
     setCreatingRace(true);
     try {
-      const race = await api.createRace({ name });
+      const race = await api.createRace({ name, eventDate: newRaceDate || null });
       await refreshRaces();
       setSelectedRaceId(race.id);
       setActiveTab("participantes");
       setCreateRaceOpen(false);
       setNewRaceName("");
+      setNewRaceDate(new Date().toISOString().slice(0, 10));
     } finally {
       setCreatingRace(false);
     }
-  }, [newRaceName, refreshRaces]);
+  }, [newRaceDate, newRaceName, refreshRaces]);
 
   if (!currentUser) return <Login onLogin={handleLogin} />;
 
@@ -377,6 +404,13 @@ export default function App() {
   const { raceStarted, raceClosed, raceStartTime, participants, finishers } = raceState;
   const selectedRace = races.find((race) => race.id === selectedRaceId) || null;
   const TABS = getTabs(currentUser.role, raceStarted, raceClosed);
+  const officialDateLabel = selectedRace?.isOfficial && selectedRace?.eventDate
+    ? new Date(selectedRace.eventDate).toLocaleDateString("es-PE", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+      })
+    : null;
 
   return (
     <div className="app">
@@ -385,7 +419,7 @@ export default function App() {
         onClick={() => setTheme((t) => (t === "dark" ? "light" : "dark"))}
         title={theme === "dark" ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
       >
-        {theme === "dark" ? "☀️" : "🌙"}
+        {theme === "dark" ? "â˜€ï¸" : "ðŸŒ™"}
       </button>
 
       <header className="navbar">
@@ -395,6 +429,12 @@ export default function App() {
 
         <div className="navbar-race-pill">
           {selectedRace ? selectedRace.name : "Sin carrera"}
+          {selectedRace?.isOfficial && (
+            <span className="navbar-race-pill-status">Oficial</span>
+          )}
+          {officialDateLabel && (
+            <span className="navbar-race-pill-date">{officialDateLabel}</span>
+          )}
         </div>
 
         <nav className="tab-nav">
@@ -434,14 +474,43 @@ export default function App() {
           )}
           {error === "offline" && (
             <button className="reconnect-btn" onClick={startPolling}>
-              ⚠️ Sin conexión — Reconectar
+              âš ï¸ Sin conexiÃ³n â€” Reconectar
             </button>
           )}
-          <div className="navbar-user">
-            <span className="navbar-username">{currentUser.username}</span>
-            <button className="logout-btn" onClick={handleLogout}>
-              Cerrar sesión
+          <div className="navbar-user" ref={userMenuRef}>
+            <button
+              type="button"
+              className={`navbar-user-trigger ${userMenuOpen ? "navbar-user-trigger-open" : ""}`}
+              onClick={() => setUserMenuOpen((value) => !value)}
+            >
+              <span className="navbar-user-trigger-name">{currentUser.username}</span>
+              <span className="navbar-user-trigger-caret">{userMenuOpen ? "▴" : "▾"}</span>
             </button>
+            {userMenuOpen && (
+              <div className="navbar-user-menu">
+                <div className="navbar-user-menu-header">
+                  <div className="navbar-user-menu-name">{currentUser.username}</div>
+                  <div className="navbar-user-menu-role">{currentUser.role}</div>
+                </div>
+                <button
+                  type="button"
+                  className="navbar-user-menu-item"
+                  onClick={() => {
+                    setTheme((value) => (value === "dark" ? "light" : "dark"));
+                    setUserMenuOpen(false);
+                  }}
+                >
+                  {theme === "dark" ? "Modo claro" : "Modo oscuro"}
+                </button>
+                <button
+                  type="button"
+                  className="navbar-user-menu-item navbar-user-menu-item-danger"
+                  onClick={handleLogout}
+                >
+                  Cerrar sesión
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </header>
@@ -463,11 +532,12 @@ export default function App() {
           <div
             className="app-dialog-backdrop"
             onClick={() => {
-              if (!creatingRace) {
-                setCreateRaceOpen(false);
-                setNewRaceName("");
-              }
-            }}
+                if (!creatingRace) {
+                  setCreateRaceOpen(false);
+                  setNewRaceName("");
+                  setNewRaceDate(new Date().toISOString().slice(0, 10));
+                }
+              }}
           >
             <div
               className="app-dialog"
@@ -479,22 +549,23 @@ export default function App() {
                   type="button"
                   className="app-dialog-close"
                   onClick={() => {
-                    if (!creatingRace) {
-                      setCreateRaceOpen(false);
-                      setNewRaceName("");
-                    }
-                  }}
+                      if (!creatingRace) {
+                        setCreateRaceOpen(false);
+                        setNewRaceName("");
+                        setNewRaceDate(new Date().toISOString().slice(0, 10));
+                      }
+                    }}
                   disabled={creatingRace}
                 >
                   X
                 </button>
               </div>
 
-              <div className="app-dialog-body">
-                <label className="login-label" htmlFor="new-race-name">Nombre</label>
-                <input
-                  id="new-race-name"
-                  className="login-input"
+                <div className="app-dialog-body">
+                  <label className="login-label" htmlFor="new-race-name">Nombre</label>
+                  <input
+                    id="new-race-name"
+                    className="login-input"
                   type="text"
                   value={newRaceName}
                   onChange={(event) => setNewRaceName(event.target.value)}
@@ -505,20 +576,29 @@ export default function App() {
                     if (event.key === "Enter") {
                       handleCreateRace();
                     }
-                  }}
-                />
-              </div>
+                    }}
+                  />
+                  <label className="login-label" htmlFor="new-race-date">Fecha de carrera</label>
+                  <input
+                    id="new-race-date"
+                    className="login-input"
+                    type="date"
+                    value={newRaceDate}
+                    onChange={(event) => setNewRaceDate(event.target.value)}
+                  />
+                </div>
 
-              <div className="app-dialog-actions">
-                <button
-                  type="button"
-                  className="btn btn-secondary"
-                  onClick={() => {
-                    setCreateRaceOpen(false);
-                    setNewRaceName("");
-                  }}
-                  disabled={creatingRace}
-                >
+                <div className="app-dialog-actions">
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={() => {
+                      setCreateRaceOpen(false);
+                      setNewRaceName("");
+                      setNewRaceDate(new Date().toISOString().slice(0, 10));
+                    }}
+                    disabled={creatingRace}
+                  >
                   Cancelar
                 </button>
                 <button
@@ -608,3 +688,4 @@ export default function App() {
     </div>
   );
 }
+

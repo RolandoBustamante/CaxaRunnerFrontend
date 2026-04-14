@@ -7,6 +7,10 @@ function getResultsSlug() {
   return match ? decodeURIComponent(match[1]) : null;
 }
 
+function formatCertificateTime(value) {
+  return formatTime(value, true, true);
+}
+
 function CertificatePreview({ race, certificate }) {
   return (
     <div className="certificate-preview-shell">
@@ -30,11 +34,11 @@ function CertificatePreview({ race, certificate }) {
         </p>
         <div className="certificate-name">{certificate.name}</div>
         <p className="certificate-copy certificate-copy-strong">
-          Concluyo oficialmente la distancia de <strong>{certificate.distance}</strong>, ocupando el puesto <strong>{certificate.position}</strong> del orden general, con un tiempo oficial de <strong>{formatTime(certificate.time)}</strong>.
+          Concluyo oficialmente la distancia de <strong>{certificate.distance}</strong>, ocupando el puesto <strong>{certificate.position}</strong> del orden general, con un tiempo oficial de <strong>{formatCertificateTime(certificate.time)}</strong>.
         </p>
         <div className="certificate-grid">
           <div className="certificate-metric">
-            <div className="certificate-metric-value">{formatTime(certificate.time)}</div>
+            <div className="certificate-metric-value">{formatCertificateTime(certificate.time)}</div>
             <div className="certificate-metric-label">Tiempo oficial</div>
           </div>
           <div className="certificate-metric">
@@ -167,7 +171,7 @@ export default function PublicResultsView() {
       {!error && (
         <div className="public-results-panel">
           <div className="public-results-note">
-            Toca una fila para validar tu documento y descargar el certificado de finisher.
+            Usa el boton PDF para validar tu documento y descargar el certificado de finisher.
           </div>
 
           <div className="results-searchbar">
@@ -193,6 +197,7 @@ export default function PublicResultsView() {
                   <th>Dorsal</th>
                   <th>Nombre</th>
                   <th>Tiempo</th>
+                  <th>PDF</th>
                 </tr>
               </thead>
               <tbody>
@@ -200,13 +205,6 @@ export default function PublicResultsView() {
                   <tr
                     key={result.id ?? `${result.dorsal}-${result.position ?? "dq"}`}
                     className={`public-result-row ${result.disqualified ? "public-result-row-disabled" : ""}`}
-                    onClick={() => {
-                      if (result.disqualified) return;
-                      setSelectedResult(result);
-                      setDocumentInput("");
-                      setValidationError(null);
-                      setCertificate(null);
-                    }}
                   >
                     <td>
                       <span className={`position-badge ${result.disqualified ? "dq-badge" : ""}`}>
@@ -220,12 +218,28 @@ export default function PublicResultsView() {
                         <span className="dq-reason-inline"> - {result.dqReason}</span>
                       )}
                     </td>
-                    <td className="time-cell">{formatTime(result.time)}</td>
+                    <td className="time-cell public-results-time">{formatCertificateTime(result.time)}</td>
+                    <td className="public-results-action-cell">
+                      <button
+                        type="button"
+                        className="public-pdf-btn"
+                        title={result.disqualified ? "Certificado no disponible" : "Descargar certificado"}
+                        disabled={result.disqualified}
+                        onClick={() => {
+                          setSelectedResult(result);
+                          setDocumentInput("");
+                          setValidationError(null);
+                          setCertificate(null);
+                        }}
+                      >
+                        PDF
+                      </button>
+                    </td>
                   </tr>
                 ))}
                 {filteredResults.length === 0 && (
                   <tr>
-                    <td colSpan={4} className="results-empty-filter">
+                    <td colSpan={5} className="results-empty-filter">
                       No hay resultados para esta busqueda.
                     </td>
                   </tr>
