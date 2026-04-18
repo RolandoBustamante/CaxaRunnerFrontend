@@ -595,8 +595,7 @@ export default function Acreditacion({ participants, categories = DEFAULT_CATEGO
                 <tr>
                   <th>Documento</th>
                   <th>Nombre</th>
-                  <th>Edad</th>
-                  <th>Cat.</th>
+                  <th>Categoria</th>
                   <th>Dorsal</th>
                   <th>Kit</th>
                   <th>Carta</th>
@@ -609,7 +608,6 @@ export default function Acreditacion({ participants, categories = DEFAULT_CATEGO
                     <tr key={p.id}>
                       <td className="acred-table-doc">{p.documento}</td>
                       <td className="name-cell">{p.nombre}</td>
-                      <td className="text-muted">{p.edad}</td>
                       <td><span className="category-tag">{category}</span></td>
                       <td className="acred-dorsal-cell">
                         {editingDorsalId === p.id ? (

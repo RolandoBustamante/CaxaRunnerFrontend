@@ -1,15 +1,15 @@
-import { formatTime } from "../utils/categories";
+import { formatTime, getCategory } from "../utils/categories";
 
 const PODIUM_STYLES = [
-  { label: "1°", className: "podium-gold", icon: "🥇" },
-  { label: "2°", className: "podium-silver", icon: "🥈" },
-  { label: "3°", className: "podium-bronze", icon: "🥉" },
+  { label: "1", className: "podium-gold", icon: "1" },
+  { label: "2", className: "podium-silver", icon: "2" },
+  { label: "3", className: "podium-bronze", icon: "3" },
 ];
 
 export default function CategoryResults({ categoryName, finishers, participants }) {
   const participantMap = {};
-  for (const p of participants) {
-    participantMap[String(p.dorsal).trim()] = p;
+  for (const participant of participants) {
+    participantMap[String(participant.dorsal).trim()] = participant;
   }
 
   const top3 = finishers.slice(0, 3);
@@ -19,30 +19,30 @@ export default function CategoryResults({ categoryName, finishers, participants 
     <div className="category-card">
       <div className="category-header">
         <h3 className="category-name">{categoryName}</h3>
-        <span className="badge badge-muted">{finishers.length} finisher{finishers.length !== 1 ? "s" : ""}</span>
+        <span className="badge badge-muted">
+          {finishers.length} finisher{finishers.length !== 1 ? "s" : ""}
+        </span>
       </div>
 
-      {/* Podium */}
       {top3.length > 0 && (
         <div className="podium-row">
-          {top3.map((f, i) => {
-            const p = participantMap[String(f.dorsal).trim()];
-            const style = PODIUM_STYLES[i];
+          {top3.map((finisher, index) => {
+            const participant = participantMap[String(finisher.dorsal).trim()];
+            const style = PODIUM_STYLES[index];
             return (
-              <div key={f.dorsal} className={`podium-card ${style.className}`}>
+              <div key={finisher.dorsal} className={`podium-card ${style.className}`}>
                 <div className="podium-icon">{style.icon}</div>
                 <div className="podium-position">{style.label}</div>
-                <div className="podium-dorsal">#{f.dorsal}</div>
-                <div className="podium-athlete-name">{p ? p.nombre : "—"}</div>
-                <div className="podium-time">{formatTime(f.elapsedMs)}</div>
-                <div className="podium-overall">Gral. #{f.overallPosition}</div>
+                <div className="podium-dorsal">#{finisher.dorsal}</div>
+                <div className="podium-athlete-name">{participant ? participant.nombre : "-"}</div>
+                <div className="podium-time">{formatTime(finisher.elapsedMs)}</div>
+                <div className="podium-overall">Gral. #{finisher.overallPosition}</div>
               </div>
             );
           })}
         </div>
       )}
 
-      {/* Rest of finishers */}
       {rest.length > 0 && (
         <div className="table-wrapper" style={{ marginTop: "0.75rem" }}>
           <table className="data-table">
@@ -52,21 +52,25 @@ export default function CategoryResults({ categoryName, finishers, participants 
                 <th>Gral.</th>
                 <th>Dorsal</th>
                 <th>Nombre</th>
-                <th>Edad</th>
+                <th>Categoria</th>
                 <th>Tiempo</th>
               </tr>
             </thead>
             <tbody>
-              {rest.map((f) => {
-                const p = participantMap[String(f.dorsal).trim()];
+              {rest.map((finisher) => {
+                const participant = participantMap[String(finisher.dorsal).trim()];
+                const category = participant
+                  ? getCategory(participant.edad, participant.genero, participant.distancia)
+                  : "-";
+
                 return (
-                  <tr key={f.dorsal}>
-                    <td><strong>{f.categoryPosition}</strong></td>
-                    <td className="text-muted">{f.overallPosition}</td>
-                    <td><span className="dorsal-badge">{f.dorsal}</span></td>
-                    <td>{p ? p.nombre : "—"}</td>
-                    <td className="text-muted">{p ? p.edad : "—"}</td>
-                    <td className="time-cell">{formatTime(f.elapsedMs)}</td>
+                  <tr key={finisher.dorsal}>
+                    <td><strong>{finisher.categoryPosition}</strong></td>
+                    <td className="text-muted">{finisher.overallPosition}</td>
+                    <td><span className="dorsal-badge">{finisher.dorsal}</span></td>
+                    <td>{participant ? participant.nombre : "-"}</td>
+                    <td><span className="category-tag">{category}</span></td>
+                    <td className="time-cell">{formatTime(finisher.elapsedMs)}</td>
                   </tr>
                 );
               })}
@@ -76,7 +80,7 @@ export default function CategoryResults({ categoryName, finishers, participants 
       )}
 
       {finishers.length === 0 && (
-        <p className="text-muted">No hay finishers en esta categoría.</p>
+        <p className="text-muted">No hay finishers en esta categoria.</p>
       )}
     </div>
   );

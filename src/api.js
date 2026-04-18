@@ -113,6 +113,8 @@ export const api = {
     requestBlob("POST", `/public/${encodeURIComponent(slug)}/certificate/pdf`, { dorsal, documento }),
 
   uploadParticipants: (participants, raceId) => request("POST", "/participants", { participants, raceId }),
+  uploadParticipantDorsals: (assignments, raceId) =>
+    request("POST", "/participants/dorsals", { assignments, raceId }),
   searchParticipant: (q, raceId) => request("GET", withRaceId(`/participants/search?q=${encodeURIComponent(q)}`, raceId)),
   assignDorsal: (id, dorsal, raceId) => request("POST", `/participants/${id}/dorsal`, { dorsal, raceId }),
   toggleKit: (id, raceId) => request("POST", `/participants/${id}/kit`, raceId == null ? undefined : { raceId }),

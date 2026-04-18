@@ -290,6 +290,12 @@ export default function App() {
     await fetchRace();
   }, [fetchRace, selectedRaceId]);
 
+  const handleParticipantDorsalsLoad = useCallback(async (assignments) => {
+    const result = await api.uploadParticipantDorsals(assignments, selectedRaceId);
+    await fetchRace();
+    return result;
+  }, [fetchRace, selectedRaceId]);
+
   const handleStartRace = useCallback(async () => {
     await api.startRace(selectedRaceId);
     await fetchRace();
@@ -616,12 +622,13 @@ export default function App() {
             </aside>
 
             <section className="app-main-panel">
-              {activeTab === "participantes" && (
-                <ParticipantUpload
-                  participants={participants}
-                  onParticipantsLoad={handleParticipantsLoad}
-                />
-              )}
+        {activeTab === "participantes" && (
+          <ParticipantUpload
+            participants={participants}
+            onParticipantsLoad={handleParticipantsLoad}
+            onParticipantDorsalsLoad={handleParticipantDorsalsLoad}
+          />
+        )}
               {activeTab === "acreditacion" && (
                 <Acreditacion
                   participants={participants}
