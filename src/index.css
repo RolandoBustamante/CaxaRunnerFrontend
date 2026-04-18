@@ -3956,7 +3956,7 @@ button:disabled {
   letter-spacing: 0.08em;
 }
 
-.certificate-instagram-btn {
+.certificate-share-btn {
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;

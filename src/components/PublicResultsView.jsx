@@ -13,12 +13,12 @@ function formatCertificateTime(value) {
   return formatTime(elapsedMs, true, true);
 }
 
-function InstagramIcon() {
+function ImageDownloadIcon() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true" className="certificate-action-icon">
-      <rect x="3" y="3" width="18" height="18" rx="5" fill="none" stroke="currentColor" strokeWidth="1.8" />
-      <circle cx="12" cy="12" r="4.2" fill="none" stroke="currentColor" strokeWidth="1.8" />
-      <circle cx="17.2" cy="6.8" r="1.2" fill="currentColor" />
+      <rect x="3.5" y="5" width="17" height="14" rx="2.5" fill="none" stroke="currentColor" strokeWidth="1.8" />
+      <circle cx="9" cy="10" r="1.7" fill="currentColor" />
+      <path d="M6.5 16l3.8-3.6 2.8 2.4 2.9-3 2.5 4.2" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
@@ -88,7 +88,7 @@ export default function PublicResultsView() {
   const [validating, setValidating] = useState(false);
   const [certificate, setCertificate] = useState(null);
   const [downloading, setDownloading] = useState(false);
-  const [sharingImage, setSharingImage] = useState(false);
+  const [downloadingImage, setDownloadingImage] = useState(false);
 
   useEffect(() => {
     async function fetchResults() {
@@ -153,7 +153,7 @@ export default function PublicResultsView() {
     setValidating(false);
     setCertificate(null);
     setDownloading(false);
-    setSharingImage(false);
+    setDownloadingImage(false);
   }
 
   async function handleDownloadCertificate() {
@@ -180,38 +180,27 @@ export default function PublicResultsView() {
     }
   }
 
-  async function handleShareCertificateImage() {
+  async function handleDownloadCertificateImage() {
     if (!selectedResult?.dorsal || !documentInput.trim()) return;
 
-    setSharingImage(true);
+    setDownloadingImage(true);
     setValidationError(null);
     try {
       const { blob, fileName } = await api.downloadCertificateImage(slug, selectedResult.dorsal, documentInput.trim());
-      const imageFile = new File([blob], fileName, { type: blob.type || "image/png" });
-
-      if (navigator.canShare && navigator.canShare({ files: [imageFile] })) {
-        await navigator.share({
-          files: [imageFile],
-          title: "Certificado de finisher",
-          text: `Mi certificado de ${state?.race?.name || "la carrera"}`,
-        });
-      } else {
-        const url = window.URL.createObjectURL(blob);
-        const anchor = document.createElement("a");
-        anchor.href = url;
-        anchor.download = fileName;
-        document.body.appendChild(anchor);
-        anchor.click();
-        anchor.remove();
-        window.setTimeout(() => {
-          window.URL.revokeObjectURL(url);
-        }, 1000);
-        setValidationError("Tu navegador no permite compartir directo. Se descargo la imagen para subirla a Instagram.");
-      }
-    } catch (shareError) {
-      setValidationError(shareError.message);
+      const url = window.URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = fileName;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      window.setTimeout(() => {
+        window.URL.revokeObjectURL(url);
+      }, 1000);
+    } catch (downloadError) {
+      setValidationError(downloadError.message);
     } finally {
-      setSharingImage(false);
+      setDownloadingImage(false);
     }
   }
 
@@ -236,7 +225,7 @@ export default function PublicResultsView() {
       {!error && (
         <div className="public-results-panel">
           <div className="public-results-note">
-            Usa el boton Ver para validar tu documento, ver el certificado y luego descargarlo o compartirlo.
+            Usa el boton Ver para validar tu documento, ver el certificado y luego descargarlo en PDF o imagen.
           </div>
 
           <div className="results-searchbar">
@@ -387,13 +376,13 @@ export default function PublicResultsView() {
                   </button>
                   <button
                     type="button"
-                    className="btn btn-secondary certificate-instagram-btn"
-                    onClick={handleShareCertificateImage}
-                    disabled={sharingImage}
-                    title="Compartir como imagen"
+                    className="btn btn-secondary certificate-share-btn"
+                    onClick={handleDownloadCertificateImage}
+                    disabled={downloadingImage}
+                    title="Descargar imagen"
                   >
-                    <InstagramIcon />
-                    {sharingImage ? "Preparando imagen..." : "Instagram"}
+                    <ImageDownloadIcon />
+                    {downloadingImage ? "Generando imagen..." : "Descargar imagen"}
                   </button>
                   <button
                     type="button"
