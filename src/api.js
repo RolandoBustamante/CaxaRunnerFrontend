@@ -61,6 +61,13 @@ async function requestBlob(method, path, body) {
   };
 }
 
+function ensureExtension(fileName, extension) {
+  const normalized = String(fileName || "").trim() || `archivo${extension}`;
+  return normalized.toLowerCase().endsWith(extension.toLowerCase())
+    ? normalized
+    : normalized.replace(/\.[a-z0-9]+$/i, "") + extension;
+}
+
 function withRaceId(path, raceId) {
   if (raceId == null) return path;
   const separator = path.includes("?") ? "&" : "?";
@@ -111,8 +118,13 @@ export const api = {
     request("POST", `/public/${encodeURIComponent(slug)}/certificate`, { dorsal, documento }),
   downloadCertificatePdf: (slug, dorsal, documento) =>
     requestBlob("POST", `/public/${encodeURIComponent(slug)}/certificate/pdf`, { dorsal, documento }),
-  downloadCertificateImage: (slug, dorsal, documento) =>
-    requestBlob("POST", `/public/${encodeURIComponent(slug)}/certificate/image`, { dorsal, documento }),
+  downloadCertificateImage: async (slug, dorsal, documento) => {
+    const result = await requestBlob("POST", `/public/${encodeURIComponent(slug)}/certificate/image`, { dorsal, documento });
+    return {
+      ...result,
+      fileName: ensureExtension(result.fileName, ".png"),
+    };
+  },
 
   uploadParticipants: (participants, raceId) => request("POST", "/participants", { participants, raceId }),
   uploadParticipantDorsals: (assignments, raceId) =>
