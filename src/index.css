@@ -3788,11 +3788,11 @@ button:disabled {
 }
 
 .certificate-watermark img {
-  width: 68%;
-  max-width: 720px;
-  opacity: 0.06;
-  filter: brightness(0) invert(1);
-  transform: rotate(-12deg);
+  width: 58%;
+  max-width: 640px;
+  opacity: 0.08;
+  filter: none;
+  transform: none;
 }
 
 .certificate-header {
@@ -3945,7 +3945,7 @@ button:disabled {
 }
 
 .public-pdf-btn {
-  min-width: 3rem;
+  min-width: 3.4rem;
   padding: 0.45rem 0.65rem;
   border-radius: 999px;
   border: 1px solid var(--accent-blue);
@@ -3954,6 +3954,18 @@ button:disabled {
   font-size: 0.78rem;
   font-weight: 800;
   letter-spacing: 0.08em;
+}
+
+.certificate-instagram-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.certificate-action-icon {
+  width: 1rem;
+  height: 1rem;
+  flex: 0 0 auto;
 }
 
 .public-pdf-btn:hover:not(:disabled) {

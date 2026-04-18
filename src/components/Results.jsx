@@ -87,6 +87,7 @@ export default function Results({
   const [view, setView] = useState("general");
   const [editMode, setEditMode] = useState(false);
   const [search, setSearch] = useState("");
+  const [distanceTab, setDistanceTab] = useState("TODAS");
 
   const [missedDorsal, setMissedDorsal] = useState("");
   const [missedTimeMs, setMissedTimeMs] = useState(null);
@@ -107,6 +108,15 @@ export default function Results({
     }
   }
 
+  const availableDistances = [
+    "TODAS",
+    ...Array.from(new Set(
+      participants
+        .map((participant) => String(participant.distancia || "").trim().toUpperCase())
+        .filter(Boolean)
+    )).sort(),
+  ];
+
   const normalizedSearch = search.trim().toLowerCase();
   const matchesSearch = useCallback((finisher) => {
     if (!normalizedSearch) return true;
@@ -125,9 +135,15 @@ export default function Results({
 
   const activeFinishers = finishers.filter((finisher) => !finisher.disqualified);
   const dqFinishers = finishers.filter((finisher) => finisher.disqualified);
-  const filteredActiveFinishers = activeFinishers.filter(matchesSearch);
-  const filteredDqFinishers = dqFinishers.filter(matchesSearch);
-  const filteredFinishers = finishers.filter(matchesSearch);
+  const matchesDistance = useCallback((finisher) => {
+    if (distanceTab === "TODAS") return true;
+    const participant = participantMap[String(finisher.dorsal).trim()];
+    return String(participant?.distancia || "").trim().toUpperCase() === distanceTab;
+  }, [distanceTab, participantMap]);
+
+  const filteredActiveFinishers = activeFinishers.filter((finisher) => matchesDistance(finisher) && matchesSearch(finisher));
+  const filteredDqFinishers = dqFinishers.filter((finisher) => matchesDistance(finisher) && matchesSearch(finisher));
+  const filteredFinishers = finishers.filter((finisher) => matchesDistance(finisher) && matchesSearch(finisher));
   const finisherDorsals = new Set(finishers.map((finisher) => String(finisher.dorsal).trim()));
 
   const handleMoveUp = useCallback((index) => {
@@ -136,9 +152,12 @@ export default function Results({
     [next[index - 1], next[index]] = [next[index], next[index - 1]];
 
     const filteredSet = new Set(filteredActiveFinishers.map((finisher) => String(finisher.dorsal).trim()));
-    const untouched = activeFinishers.filter((finisher) => !filteredSet.has(String(finisher.dorsal).trim()));
+    const untouched = activeFinishers.filter((finisher) => {
+      const dorsal = String(finisher.dorsal).trim();
+      return !filteredSet.has(dorsal) || !matchesDistance(finisher);
+    });
     onReorder([...next, ...untouched, ...dqFinishers]);
-  }, [activeFinishers, dqFinishers, filteredActiveFinishers, onReorder]);
+  }, [activeFinishers, dqFinishers, filteredActiveFinishers, matchesDistance, onReorder]);
 
   const handleMoveDown = useCallback((index) => {
     if (index === filteredActiveFinishers.length - 1) return;
@@ -146,9 +165,12 @@ export default function Results({
     [next[index], next[index + 1]] = [next[index + 1], next[index]];
 
     const filteredSet = new Set(filteredActiveFinishers.map((finisher) => String(finisher.dorsal).trim()));
-    const untouched = activeFinishers.filter((finisher) => !filteredSet.has(String(finisher.dorsal).trim()));
+    const untouched = activeFinishers.filter((finisher) => {
+      const dorsal = String(finisher.dorsal).trim();
+      return !filteredSet.has(dorsal) || !matchesDistance(finisher);
+    });
     onReorder([...next, ...untouched, ...dqFinishers]);
-  }, [activeFinishers, dqFinishers, filteredActiveFinishers, onReorder]);
+  }, [activeFinishers, dqFinishers, filteredActiveFinishers, matchesDistance, onReorder]);
 
   const handleDisqualify = useCallback(async (dorsal, reason) => {
     setDqBusy(true);
@@ -241,8 +263,9 @@ export default function Results({
   }, [missedDorsal, missedTimeMs, findParticipantByDorsal, finisherDorsals, finishers, onFinisherAdd, raceStartTime]);
 
   const handleExport = () => {
-    const csv = generateCSV(finishers, participants, categories);
-    downloadCSV(csv, `resultados-carrera-${new Date().toISOString().slice(0, 10)}.csv`);
+    const csv = generateCSV(filteredFinishers, participants, categories);
+    const suffix = distanceTab === "TODAS" ? "todas" : distanceTab.toLowerCase();
+    downloadCSV(csv, `resultados-${suffix}-${new Date().toISOString().slice(0, 10)}.csv`);
   };
 
   const handleCopyPublicResults = useCallback(async () => {
@@ -324,6 +347,18 @@ export default function Results({
             Limpiar
           </button>
         )}
+      </div>
+
+      <div className="view-toggle">
+        {availableDistances.map((distance) => (
+          <button
+            key={distance}
+            className={`btn btn-tab ${distanceTab === distance ? "btn-tab-active" : ""}`}
+            onClick={() => setDistanceTab(distance)}
+          >
+            {distance === "TODAS" ? "Todas" : distance}
+          </button>
+        ))}
       </div>
 
       {finishers.length === 0 ? (
@@ -558,7 +593,7 @@ export default function Results({
                 <p className="text-muted">No hay categorias con finishers para este filtro.</p>
               ) : (
                 distances.map((distance) => {
-                  const byGender = getAbsoluteByGender(finishers, participants, distance);
+                  const byGender = getAbsoluteByGender(filteredFinishers, participants, distance);
                   const absoluteDorsals = new Set([
                     ...byGender.M.map((finisher) => String(finisher.dorsal).trim()),
                     ...byGender.F.map((finisher) => String(finisher.dorsal).trim()),

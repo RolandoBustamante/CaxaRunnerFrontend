@@ -63,7 +63,12 @@ function validateDorsalAssignment(item) {
   return errors;
 }
 
-export default function ParticipantUpload({ participants, onParticipantsLoad, onParticipantDorsalsLoad }) {
+export default function ParticipantUpload({
+  participants,
+  categories = DEFAULT_CATEGORIES,
+  onParticipantsLoad,
+  onParticipantDorsalsLoad,
+}) {
   const [mode, setMode] = useState("excel");
   const [isDragging, setIsDragging] = useState(false);
   const [parseErrors, setParseErrors] = useState([]);
@@ -538,7 +543,7 @@ export default function ParticipantUpload({ participants, onParticipantsLoad, on
                           participant.edad,
                           participant.genero,
                           participant.distancia,
-                          DEFAULT_CATEGORIES
+                          categories
                         )}
                       </span>
                     </td>

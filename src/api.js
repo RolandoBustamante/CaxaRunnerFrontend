@@ -111,6 +111,8 @@ export const api = {
     request("POST", `/public/${encodeURIComponent(slug)}/certificate`, { dorsal, documento }),
   downloadCertificatePdf: (slug, dorsal, documento) =>
     requestBlob("POST", `/public/${encodeURIComponent(slug)}/certificate/pdf`, { dorsal, documento }),
+  downloadCertificateImage: (slug, dorsal, documento) =>
+    requestBlob("POST", `/public/${encodeURIComponent(slug)}/certificate/image`, { dorsal, documento }),
 
   uploadParticipants: (participants, raceId) => request("POST", "/participants", { participants, raceId }),
   uploadParticipantDorsals: (assignments, raceId) =>

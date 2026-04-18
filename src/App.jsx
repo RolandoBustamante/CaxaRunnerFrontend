@@ -625,6 +625,7 @@ export default function App() {
         {activeTab === "participantes" && (
           <ParticipantUpload
             participants={participants}
+            categories={categories}
             onParticipantsLoad={handleParticipantsLoad}
             onParticipantDorsalsLoad={handleParticipantDorsalsLoad}
           />
