@@ -89,7 +89,6 @@ function ParticipantCard({ participant, onUpdate, categories = DEFAULT_CATEGORIE
           <span className="acred-nombre">{p.nombre}</span>
           <div className="acred-meta">
             <span className={`gender-badge gender-${p.genero.toLowerCase()}`}>{p.genero}</span>
-            <span className="acred-age">{p.edad} años</span>
             <span className="category-tag">{category}</span>
           </div>
         </div>
