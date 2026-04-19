@@ -620,6 +620,7 @@ export default function Results({
                             categoryName={categoryName}
                             finishers={filtered}
                             participants={participants}
+                            categories={categories}
                           />
                         );
                       })}

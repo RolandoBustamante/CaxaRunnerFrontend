@@ -1,4 +1,4 @@
-import { formatTime, getCategory } from "../utils/categories";
+import { formatTime, getCategory, DEFAULT_CATEGORIES } from "../utils/categories";
 
 const PODIUM_STYLES = [
   { label: "1", className: "podium-gold", icon: "1" },
@@ -6,7 +6,12 @@ const PODIUM_STYLES = [
   { label: "3", className: "podium-bronze", icon: "3" },
 ];
 
-export default function CategoryResults({ categoryName, finishers, participants }) {
+export default function CategoryResults({
+  categoryName,
+  finishers,
+  participants,
+  categories = DEFAULT_CATEGORIES,
+}) {
   const participantMap = {};
   for (const participant of participants) {
     participantMap[String(participant.dorsal).trim()] = participant;
@@ -60,7 +65,7 @@ export default function CategoryResults({ categoryName, finishers, participants 
               {rest.map((finisher) => {
                 const participant = participantMap[String(finisher.dorsal).trim()];
                 const category = participant
-                  ? getCategory(participant.edad, participant.genero, participant.distancia)
+                  ? getCategory(participant.edad, participant.genero, participant.distancia, categories)
                   : "-";
 
                 return (
