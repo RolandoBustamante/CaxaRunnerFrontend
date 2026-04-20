@@ -82,26 +82,26 @@ export default function CategoryConfig({
     for (let i = 0; i < rows.length; i += 1) {
       const row = rows[i];
       if (!row.name.trim()) {
-        setMsg({ type: "error", text: `Fila ${i + 1}: el nombre no puede estar vacio.` });
+        setMsg({ type: "error", text: `Fila ${i + 1}: el nombre no puede estar vacío.` });
         return;
       }
 
       const min = parseInt(row.minAge, 10);
       if (Number.isNaN(min) || min < 0) {
-        setMsg({ type: "error", text: `Fila ${i + 1}: edad minima invalida.` });
+        setMsg({ type: "error", text: `Fila ${i + 1}: edad mínima inválida.` });
         return;
       }
 
       if (row.maxAge !== "" && row.maxAge !== null) {
         const max = parseInt(row.maxAge, 10);
         if (Number.isNaN(max) || max < min) {
-          setMsg({ type: "error", text: `Fila ${i + 1}: edad maxima debe ser mayor o igual a la minima.` });
+          setMsg({ type: "error", text: `Fila ${i + 1}: edad máxima debe ser mayor o igual a la mínima.` });
           return;
         }
       }
 
       if (row.gender && !["M", "F"].includes(String(row.gender).trim().toUpperCase())) {
-        setMsg({ type: "error", text: `Fila ${i + 1}: sexo invalido.` });
+        setMsg({ type: "error", text: `Fila ${i + 1}: sexo inválido.` });
         return;
       }
     }
@@ -118,7 +118,7 @@ export default function CategoryConfig({
     try {
       await api.saveCategories(payload, raceId);
       onCategoriesChange(payload);
-      setMsg({ type: "ok", text: "Categorias guardadas correctamente." });
+      setMsg({ type: "ok", text: "Categorías guardadas correctamente." });
     } catch (err) {
       setMsg({ type: "error", text: err.message || "Error al guardar." });
     } finally {
@@ -165,7 +165,7 @@ export default function CategoryConfig({
       setMsg({ type: "ok", text: "Datos de la carrera guardados." });
       await onRaceUpdated?.();
     } catch (err) {
-      setMsg({ type: "error", text: err.message || "No se pudo guardar la informacion de la carrera." });
+      setMsg({ type: "error", text: err.message || "No se pudo guardar la información de la carrera." });
     } finally {
       setBusy(false);
     }
@@ -174,7 +174,7 @@ export default function CategoryConfig({
   return (
     <div className="config-container">
       <div className="section-header">
-        <h2>Configuracion de categorias</h2>
+        <h2>Configuración de categorías</h2>
       </div>
 
       {race && (
@@ -203,7 +203,7 @@ export default function CategoryConfig({
               />
             </label>
             <label className="config-notice-field">
-              <span>Comunicado publico</span>
+              <span>Comunicado público</span>
               <textarea
                 className="config-input config-notice-textarea"
                 rows="4"
@@ -212,7 +212,7 @@ export default function CategoryConfig({
                   setPublicNotice(event.target.value);
                   setMsg(null);
                 }}
-                placeholder="Ej: Conforme a las bases de la competencia, las categorias que no alcanzaron el minimo requerido de participantes fueron fusionadas con las categorias correspondientes."
+                placeholder="Ej: Conforme a las bases de la competencia, las categorías que no alcanzaron el mínimo requerido de participantes fueron fusionadas con las categorías correspondientes."
               />
             </label>
             <button className="btn btn-secondary" onClick={handleSaveRaceInfo} disabled={busy}>
@@ -228,7 +228,7 @@ export default function CategoryConfig({
       )}
 
       <p className="config-desc">
-        Define categorias por distancia, sexo y rango de edad para la carrera activa. Si dejas distancia o sexo vacios, la regla aplica a todos.
+        Define categorías por distancia, sexo y rango de edad para la carrera activa. Si dejas distancia o sexo vacíos, la regla aplica a todos.
       </p>
 
       <div className="config-table-wrapper">
@@ -236,11 +236,11 @@ export default function CategoryConfig({
           <thead>
             <tr>
               <th style={{ width: "2rem" }}></th>
-              <th>Categoria</th>
+              <th>Categoría</th>
               <th>Distancia</th>
               <th>Sexo</th>
-              <th>Edad minima</th>
-              <th>Edad maxima</th>
+              <th>Edad mínima</th>
+              <th>Edad máxima</th>
               <th></th>
             </tr>
           </thead>
@@ -315,10 +315,10 @@ export default function CategoryConfig({
       </div>
 
       <div className="config-actions">
-        <button className="btn btn-secondary" onClick={addRow}>+ Agregar categoria</button>
+        <button className="btn btn-secondary" onClick={addRow}>+ Agregar categoría</button>
         <button className="btn btn-secondary" onClick={handleReset}>Restaurar por defecto</button>
         <button className="btn btn-primary" onClick={handleSave} disabled={busy}>
-          {busy ? "Guardando..." : "Guardar categorias"}
+          {busy ? "Guardando..." : "Guardar categorías"}
         </button>
       </div>
 

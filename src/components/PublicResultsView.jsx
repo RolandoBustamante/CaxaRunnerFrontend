@@ -37,16 +37,16 @@ function CertificatePreview({ race, certificate }) {
           </div>
           <div className="certificate-seal">
             <div className="certificate-seal-title">Certificado de Finisher</div>
-            <div className="certificate-seal-sub">Comite organizador</div>
+            <div className="certificate-seal-sub">Comité organizador</div>
           </div>
         </div>
         <div className="certificate-title">CERTIFICADO</div>
         <p className="certificate-copy">
-          El comite organizador certifica que el corredor(a) concluyo oficialmente la prueba.
+          El comité organizador certifica que el corredor(a) concluyó oficialmente la prueba.
         </p>
         <div className="certificate-name">{certificate.name}</div>
         <p className="certificate-copy certificate-copy-strong">
-          Concluyo oficialmente la distancia de <strong>{certificate.distance}</strong>, ocupando el puesto <strong>{certificate.position}</strong> en la clasificacion general de su distancia, con un tiempo oficial de <strong>{formatCertificateTime(certificate.timeMs)}</strong>.
+          Concluyó oficialmente la distancia de <strong>{certificate.distance}</strong>, ocupando el puesto <strong>{certificate.position}</strong> en la clasificación general de su distancia, con un tiempo oficial de <strong>{formatCertificateTime(certificate.timeMs)}</strong>.
         </p>
         <div className="certificate-grid">
           <div className="certificate-metric">
@@ -63,9 +63,9 @@ function CertificatePreview({ race, certificate }) {
           </div>
         </div>
         <div className="certificate-secondary-meta">
-          <span><strong>Puesto por genero:</strong> {certificate.genderPosition ?? "-"}</span>
-          <span><strong>Categoria:</strong> {certificate.categoryName ?? "-"}</span>
-          <span><strong>Puesto en categoria:</strong> {certificate.categoryPosition ?? "-"}</span>
+          <span><strong>Puesto por género:</strong> {certificate.genderPosition ?? "-"}</span>
+          <span><strong>Categoría:</strong> {certificate.categoryName ?? "-"}</span>
+          <span><strong>Puesto en categoría:</strong> {certificate.categoryPosition ?? "-"}</span>
         </div>
         <div className="certificate-footer-meta">
           <span><strong>Fecha del evento:</strong> {race?.eventDate ? formatRaceDate(race.eventDate) : "-"}</span>
@@ -353,7 +353,7 @@ export default function PublicResultsView() {
               <>
                 <div className="app-dialog-body">
                   <p className="certificate-help">
-                    Para descargar el certificado del dorsal <strong>{selectedResult.dorsal}</strong>, ingresa tu numero de documento.
+                    Para descargar el certificado del dorsal <strong>{selectedResult.dorsal}</strong>, ingresa tu número de documento.
                     Puede ser DNI, pasaporte u otro documento registrado al inscribirte.
                   </p>
                   <label className="login-label" htmlFor="certificate-document">Documento</label>
