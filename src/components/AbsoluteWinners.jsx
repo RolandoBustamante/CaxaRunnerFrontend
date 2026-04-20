@@ -13,7 +13,7 @@ function GenderPodium({ title, finishers }) {
       <h4 className="absolute-gender-title">{title}</h4>
       <div className="podium-row">
         {finishers.map((f, i) => {
-          const style = PODIUM[i];
+          const style = PODIUM[i] || { icon: "•", label: `${f.genderPosition ?? i + 1}°`, className: "podium-bronze" };
           return (
             <div key={f.dorsal} className={`podium-card ${style.className}`}>
               <div className="podium-icon">{style.icon}</div>

@@ -127,15 +127,29 @@ export function getAbsoluteByGender(finishers, participants, distance) {
   }
 
   const result = { M: [], F: [] };
+  const rankState = {
+    M: { seen: 0, lastSource: null, currentRank: 0 },
+    F: { seen: 0, lastSource: null, currentRank: 0 },
+  };
 
   for (const finisher of finishers.filter((entry) => !entry.disqualified)) {
     const participant = participantMap[String(finisher.dorsal).trim()];
     if (!participant || participant.distancia !== distance) continue;
     const gender = String(participant.genero).toUpperCase();
-    if ((gender === "M" || gender === "F") && result[gender].length < 3) {
-      result[gender].push({ ...finisher, genderPosition: result[gender].length + 1, participant });
+    if (gender !== "M" && gender !== "F") continue;
+
+    const state = rankState[gender];
+    state.seen += 1;
+    const source = Number(finisher.position) || state.seen;
+
+    if (state.lastSource !== source) {
+      state.currentRank = state.seen;
+      state.lastSource = source;
     }
-    if (result.M.length >= 3 && result.F.length >= 3) break;
+
+    if (state.currentRank <= 3) {
+      result[gender].push({ ...finisher, genderPosition: state.currentRank, participant });
+    }
   }
 
   return result;
