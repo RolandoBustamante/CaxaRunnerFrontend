@@ -5,6 +5,7 @@ import {
   groupByDistance,
   sortedCategories,
   getAbsoluteByGender,
+  applyCompetitionRanking,
   DEFAULT_CATEGORIES,
 } from "../utils/categories";
 import CategoryResults from "./CategoryResults";
@@ -43,7 +44,7 @@ function generateCSV(finishers, participants, categories) {
       : "-";
 
     return [
-      finisher.disqualified ? "DQ" : index + 1,
+      finisher.disqualified ? "DQ" : finisher.position ?? index + 1,
       finisher.dorsal,
       participant ? participant.nombre : "-",
       participant ? participant.edad : "-",
@@ -81,6 +82,7 @@ export default function Results({
   onFinisherAdd,
   onFinisherDisqualify,
   onFinisherTimeUpdate,
+  onFinisherPositionUpdate,
   onResetResults,
   onResetAll,
 }) {
@@ -100,6 +102,7 @@ export default function Results({
   const [copied, setCopied] = useState(false);
 
   const [editingTime, setEditingTime] = useState(null);
+  const [editingPosition, setEditingPosition] = useState(null);
 
   const participantMap = {};
   for (const participant of participants) {
@@ -206,6 +209,30 @@ export default function Results({
     }
   }, [editingTime, onFinisherTimeUpdate]);
 
+  const handlePositionEditStart = useCallback((finisher) => {
+    setEditingPosition({
+      dorsal: String(finisher.dorsal).trim(),
+      value: String(finisher.position ?? ""),
+      error: "",
+    });
+  }, []);
+
+  const handlePositionEditConfirm = useCallback(async () => {
+    if (!editingPosition) return;
+    const parsed = Number.parseInt(editingPosition.value, 10);
+    if (!Number.isInteger(parsed) || parsed <= 0) {
+      setEditingPosition((prev) => ({ ...prev, error: "Puesto inválido." }));
+      return;
+    }
+
+    try {
+      await onFinisherPositionUpdate(editingPosition.dorsal, parsed);
+      setEditingPosition(null);
+    } catch {
+      setEditingPosition((prev) => ({ ...prev, error: "No se pudo guardar el puesto." }));
+    }
+  }, [editingPosition, onFinisherPositionUpdate]);
+
   const findParticipantByDorsal = useCallback((raw) => {
     if (participantMap[raw]) return participantMap[raw];
     const num = parseInt(raw, 10);
@@ -233,7 +260,8 @@ export default function Results({
 
     const canonicalDorsal = String(participant.dorsal).trim();
     if (finisherDorsals.has(canonicalDorsal)) {
-      const pos = finishers.findIndex((finisher) => String(finisher.dorsal).trim() === canonicalDorsal) + 1;
+      const existingFinisher = finishers.find((finisher) => String(finisher.dorsal).trim() === canonicalDorsal);
+      const pos = existingFinisher?.position ?? finishers.findIndex((finisher) => String(finisher.dorsal).trim() === canonicalDorsal) + 1;
       setMissedError(`El dorsal #${canonicalDorsal} ya esta registrado en el puesto #${pos}.`);
       return;
     }
@@ -493,7 +521,10 @@ export default function Results({
                       : "-";
 
                     return (
-                      <tr key={finisher.dorsal + finisher.timestamp} className={index < 3 ? `row-top-${index + 1}` : ""}>
+                      <tr
+                        key={finisher.dorsal + finisher.timestamp}
+                        className={finisher.position >= 1 && finisher.position <= 3 ? `row-top-${finisher.position}` : ""}
+                      >
                         {editMode && (
                           <td className="reorder-cell">
                             <button className="reorder-btn" onClick={() => handleMoveUp(index)} disabled={index === 0} title="Subir">^</button>
@@ -510,7 +541,34 @@ export default function Results({
                             </button>
                           </td>
                         )}
-                        <td><span className={`position-badge pos-${index + 1}`}>{index + 1}</span></td>
+                        <td>
+                          {editMode && editingPosition?.dorsal === String(finisher.dorsal).trim() ? (
+                            <div className="position-edit-cell">
+                              <input
+                                className="missed-input position-edit-input"
+                                type="number"
+                                min="1"
+                                value={editingPosition.value}
+                                onChange={(event) => setEditingPosition((prev) => ({ ...prev, value: event.target.value, error: "" }))}
+                                onKeyDown={(event) => {
+                                  if (event.key === "Enter") handlePositionEditConfirm();
+                                }}
+                                autoFocus
+                              />
+                              <button className="reorder-btn time-confirm-btn" onClick={handlePositionEditConfirm} title="Confirmar">OK</button>
+                              <button className="reorder-btn" onClick={() => setEditingPosition(null)} title="Cancelar">X</button>
+                              {editingPosition.error && <span className="time-edit-error">{editingPosition.error}</span>}
+                            </div>
+                          ) : (
+                            <span
+                              className={`position-badge pos-${finisher.position} ${editMode ? "position-badge-editable" : ""}`}
+                              onClick={editMode ? () => handlePositionEditStart(finisher) : undefined}
+                              title={editMode ? "Editar puesto oficial" : undefined}
+                            >
+                              {finisher.position}
+                            </span>
+                          )}
+                        </td>
                         <td><span className="dorsal-badge">{finisher.dorsal}</span></td>
                         <td className="name-cell">{participant ? participant.nombre : "-"}</td>
                         <td><span className="category-tag">{participant ? participant.distancia : "-"}</span></td>
@@ -610,9 +668,12 @@ export default function Results({
                       <div className="category-section-divider">Por categoria</div>
 
                       {sortedCategories(distanceGroups[distance], distance, categories).map((categoryName) => {
-                        const filtered = distanceGroups[distance][categoryName]
-                          .filter((finisher) => !absoluteDorsals.has(String(finisher.dorsal).trim()))
-                          .map((finisher, index) => ({ ...finisher, categoryPosition: index + 1 }));
+                        const filtered = applyCompetitionRanking(
+                          distanceGroups[distance][categoryName]
+                            .filter((finisher) => !absoluteDorsals.has(String(finisher.dorsal).trim())),
+                          "position",
+                          "categoryPosition"
+                        );
 
                         return (
                           <CategoryResults

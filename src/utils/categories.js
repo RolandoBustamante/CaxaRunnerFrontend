@@ -58,6 +58,28 @@ export function getCategory(edad, genero, distancia, categories = DEFAULT_CATEGO
   return `${prefix}${gender} ${categoryName}`;
 }
 
+export function applyCompetitionRanking(entries, sourceField = "position", targetField = "rank") {
+  let seen = 0;
+  let lastSource = null;
+  let currentRank = 0;
+
+  return entries.map((entry) => {
+    seen += 1;
+    const rawSource = Number(entry?.[sourceField]);
+    const source = Number.isFinite(rawSource) && rawSource > 0 ? rawSource : seen;
+
+    if (lastSource !== source) {
+      currentRank = seen;
+      lastSource = source;
+    }
+
+    return {
+      ...entry,
+      [targetField]: currentRank,
+    };
+  });
+}
+
 export function groupByDistance(finishers, participants, categories = DEFAULT_CATEGORIES) {
   const participantMap = {};
   for (const participant of participants) {
@@ -79,7 +101,7 @@ export function groupByDistance(finishers, participants, categories = DEFAULT_CA
 
     byDistance[distance][category].push({
       ...finisher,
-      overallPosition: index + 1,
+      overallPosition: Number(finisher.position) || index + 1,
       participant,
       category,
     });
@@ -87,10 +109,11 @@ export function groupByDistance(finishers, participants, categories = DEFAULT_CA
 
   for (const distance of Object.keys(byDistance)) {
     for (const category of Object.keys(byDistance[distance])) {
-      byDistance[distance][category] = byDistance[distance][category].map((entry, index) => ({
-        ...entry,
-        categoryPosition: index + 1,
-      }));
+      byDistance[distance][category] = applyCompetitionRanking(
+        byDistance[distance][category],
+        "position",
+        "categoryPosition"
+      );
     }
   }
 

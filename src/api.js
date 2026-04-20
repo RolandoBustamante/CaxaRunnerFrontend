@@ -147,6 +147,8 @@ export const api = {
     request("POST", `/finishers/${encodeURIComponent(dorsal)}/disqualify`, { disqualified, reason, raceId }),
   updateFinisherTime: (dorsal, elapsedMs, raceStartTime, raceId) =>
     request("PUT", `/finishers/${encodeURIComponent(dorsal)}/time`, { elapsedMs, raceStartTime, raceId }),
+  updateFinisherPosition: (dorsal, position, raceId) =>
+    request("PUT", `/finishers/${encodeURIComponent(dorsal)}/position`, { position, raceId }),
 
   getDni: async (dni) => {
     try {

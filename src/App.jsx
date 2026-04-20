@@ -358,8 +358,12 @@ export default function App() {
   }, [fetchRace, selectedRaceId]);
 
   const handleReorder = useCallback(async (reordered) => {
-    setRaceState((prev) => ({ ...prev, finishers: reordered }));
-    await api.reorderFinishers(reordered, selectedRaceId);
+    const normalized = reordered.map(({ position, ...finisher }) => finisher);
+    setRaceState((prev) => ({
+      ...prev,
+      finishers: reordered.map((finisher, index) => ({ ...finisher, position: index + 1 })),
+    }));
+    await api.reorderFinishers(normalized, selectedRaceId);
     await fetchRace();
   }, [fetchRace, selectedRaceId]);
 
@@ -372,6 +376,11 @@ export default function App() {
     await api.updateFinisherTime(dorsal, elapsedMs, raceState.raceStartTime, selectedRaceId);
     await fetchRace();
   }, [fetchRace, raceState.raceStartTime, selectedRaceId]);
+
+  const handleFinisherPositionUpdate = useCallback(async (dorsal, position) => {
+    await api.updateFinisherPosition(dorsal, position, selectedRaceId);
+    await fetchRace();
+  }, [fetchRace, selectedRaceId]);
 
   const handleAcreditacionUpdate = useCallback(async () => {
     await fetchRace();
@@ -664,6 +673,7 @@ export default function App() {
                   onFinisherAdd={handleMissedFinisherAdd}
                   onFinisherDisqualify={handleFinisherDisqualify}
                   onFinisherTimeUpdate={handleFinisherTimeUpdate}
+                  onFinisherPositionUpdate={handleFinisherPositionUpdate}
                   onResetResults={handleResetResults}
                   onResetAll={handleResetAll}
                 />

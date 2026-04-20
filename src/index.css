@@ -1375,6 +1375,16 @@ button:disabled {
   color: var(--text-secondary);
 }
 
+.position-badge-editable {
+  cursor: pointer;
+  border: 1px dashed var(--accent-blue);
+}
+
+.position-badge-editable:hover {
+  background: rgba(59, 130, 246, 0.12);
+  color: var(--text-primary);
+}
+
 .pos-1 {
   background: rgba(255, 215, 0, 0.15);
   color: var(--gold);
@@ -1539,6 +1549,17 @@ button:disabled {
   align-items: center;
   gap: 4px;
   flex-wrap: wrap;
+}
+
+.position-edit-cell {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.position-edit-input {
+  width: 80px;
 }
 
 
