@@ -1,11 +1,20 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { api } from "../api";
 import { confirmDialog } from "../utils/dialog";
 import { DEFAULT_CATEGORIES } from "../utils/categories";
 import { toDateInputValue } from "../utils/dates";
 
+function normalizeRows(categories) {
+  return categories.map((category) => ({
+    ...category,
+    distance: category.distance ?? "",
+    gender: category.gender ?? "",
+    maxAge: category.maxAge === null ? "" : category.maxAge,
+  }));
+}
+
 function newRow() {
-  return { name: "", minAge: "", maxAge: "" };
+  return { name: "", minAge: "", maxAge: "", distance: "", gender: "" };
 }
 
 export default function CategoryConfig({
@@ -15,21 +24,19 @@ export default function CategoryConfig({
   race,
   onRaceUpdated,
 }) {
-  const [rows, setRows] = useState(() =>
-    categories.map((category) => ({
-      ...category,
-      maxAge: category.maxAge === null ? "" : category.maxAge,
-    }))
-  );
+  const [rows, setRows] = useState(() => normalizeRows(categories));
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState(null);
   const [eventDate, setEventDate] = useState(toDateInputValue(race?.eventDate));
 
+  const distanceOptions = useMemo(() => {
+    const raceDistances = Array.isArray(race?.distances) ? race.distances : [];
+    const rowDistances = rows.map((row) => String(row.distance || "").trim().toUpperCase()).filter(Boolean);
+    return [...new Set([...raceDistances, ...rowDistances])].sort();
+  }, [race?.distances, rows]);
+
   useEffect(() => {
-    setRows(categories.map((category) => ({
-      ...category,
-      maxAge: category.maxAge === null ? "" : category.maxAge,
-    })));
+    setRows(normalizeRows(categories));
     setEventDate(toDateInputValue(race?.eventDate));
     setMsg(null);
   }, [categories, race?.eventDate]);
@@ -90,12 +97,19 @@ export default function CategoryConfig({
           return;
         }
       }
+
+      if (row.gender && !["M", "F"].includes(String(row.gender).trim().toUpperCase())) {
+        setMsg({ type: "error", text: `Fila ${i + 1}: sexo invalido.` });
+        return;
+      }
     }
 
     const payload = rows.map((row) => ({
       name: row.name.trim(),
       minAge: parseInt(row.minAge, 10),
       maxAge: row.maxAge === "" || row.maxAge === null ? null : parseInt(row.maxAge, 10),
+      distance: row.distance ? String(row.distance).trim().toUpperCase() : null,
+      gender: row.gender ? String(row.gender).trim().toUpperCase() : null,
     }));
 
     setBusy(true);
@@ -111,10 +125,7 @@ export default function CategoryConfig({
   }
 
   function handleReset() {
-    setRows(DEFAULT_CATEGORIES.map((category) => ({
-      ...category,
-      maxAge: category.maxAge === null ? "" : category.maxAge,
-    })));
+    setRows(normalizeRows(DEFAULT_CATEGORIES));
     setMsg(null);
   }
 
@@ -199,7 +210,7 @@ export default function CategoryConfig({
       )}
 
       <p className="config-desc">
-        Define rangos de edad y nombres de categoria para la carrera activa.
+        Define categorias por distancia, sexo y rango de edad para la carrera activa. Si dejas distancia o sexo vacios, la regla aplica a todos.
       </p>
 
       <div className="config-table-wrapper">
@@ -208,6 +219,8 @@ export default function CategoryConfig({
             <tr>
               <th style={{ width: "2rem" }}></th>
               <th>Categoria</th>
+              <th>Distancia</th>
+              <th>Sexo</th>
               <th>Edad minima</th>
               <th>Edad maxima</th>
               <th></th>
@@ -217,31 +230,40 @@ export default function CategoryConfig({
             {rows.map((row, index) => (
               <tr key={index}>
                 <td className="reorder-cell">
-                  <button
-                    className="reorder-btn"
-                    onClick={() => moveUp(index)}
-                    disabled={index === 0}
-                    title="Subir"
-                  >
-                    ^
-                  </button>
-                  <button
-                    className="reorder-btn"
-                    onClick={() => moveDown(index)}
-                    disabled={index === rows.length - 1}
-                    title="Bajar"
-                  >
-                    v
-                  </button>
+                  <button className="reorder-btn" onClick={() => moveUp(index)} disabled={index === 0} title="Subir">^</button>
+                  <button className="reorder-btn" onClick={() => moveDown(index)} disabled={index === rows.length - 1} title="Bajar">v</button>
                 </td>
                 <td>
                   <input
                     className="config-input"
                     type="text"
-                    placeholder="Ej: Master A"
+                    placeholder="Ej: Libre"
                     value={row.name}
-                    onChange={(e) => setRow(index, "name", e.target.value)}
+                    onChange={(event) => setRow(index, "name", event.target.value)}
                   />
+                </td>
+                <td>
+                  <select
+                    className="config-input"
+                    value={row.distance}
+                    onChange={(event) => setRow(index, "distance", event.target.value)}
+                  >
+                    <option value="">Todas</option>
+                    {distanceOptions.map((distance) => (
+                      <option key={distance} value={distance}>{distance}</option>
+                    ))}
+                  </select>
+                </td>
+                <td>
+                  <select
+                    className="config-input"
+                    value={row.gender}
+                    onChange={(event) => setRow(index, "gender", event.target.value)}
+                  >
+                    <option value="">Todos</option>
+                    <option value="M">M</option>
+                    <option value="F">F</option>
+                  </select>
                 </td>
                 <td>
                   <input
@@ -250,7 +272,7 @@ export default function CategoryConfig({
                     min="0"
                     placeholder="0"
                     value={row.minAge}
-                    onChange={(e) => setRow(index, "minAge", e.target.value)}
+                    onChange={(event) => setRow(index, "minAge", event.target.value)}
                   />
                 </td>
                 <td>
@@ -260,15 +282,11 @@ export default function CategoryConfig({
                     min="0"
                     placeholder="Sin limite"
                     value={row.maxAge}
-                    onChange={(e) => setRow(index, "maxAge", e.target.value)}
+                    onChange={(event) => setRow(index, "maxAge", event.target.value)}
                   />
                 </td>
                 <td>
-                  <button
-                    className="btn btn-danger btn-sm"
-                    onClick={() => removeRow(index)}
-                    title="Eliminar fila"
-                  >
+                  <button className="btn btn-danger btn-sm" onClick={() => removeRow(index)} title="Eliminar fila">
                     X
                   </button>
                 </td>
@@ -297,7 +315,7 @@ export default function CategoryConfig({
         <div className="config-preview-chips">
           {rows.map((row, index) => (
             <span key={index} className="category-tag">
-              {row.name || "-"} ({row.minAge}-{row.maxAge === "" || row.maxAge === null ? "inf" : row.maxAge})
+              {(row.distance || "Todas")} · {(row.gender || "Todos")} · {row.name || "-"} ({row.minAge}-{row.maxAge === "" || row.maxAge === null ? "inf" : row.maxAge})
             </span>
           ))}
         </div>

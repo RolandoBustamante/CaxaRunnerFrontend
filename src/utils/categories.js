@@ -1,70 +1,95 @@
 export const DEFAULT_CATEGORIES = [
-  { name: "Sub-18", minAge: 0, maxAge: 17 },
-  { name: "Open", minAge: 18, maxAge: 39 },
-  { name: "Master A", minAge: 40, maxAge: 49 },
-  { name: "Master B", minAge: 50, maxAge: 59 },
-  { name: "Master C", minAge: 60, maxAge: null },
+  { name: "Sub-18", minAge: 0, maxAge: 17, distance: null, gender: null },
+  { name: "Open", minAge: 18, maxAge: 39, distance: null, gender: null },
+  { name: "Master A", minAge: 40, maxAge: 49, distance: null, gender: null },
+  { name: "Master B", minAge: 50, maxAge: 59, distance: null, gender: null },
+  { name: "Master C", minAge: 60, maxAge: null, distance: null, gender: null },
 ];
 
-function getAgeCategory(edad, categories = DEFAULT_CATEGORIES) {
+function normalizeDistance(value) {
+  const normalized = String(value || "").trim().toUpperCase();
+  return normalized || null;
+}
+
+function normalizeGender(value) {
+  const normalized = String(value || "").trim().toUpperCase();
+  return normalized || null;
+}
+
+function normalizeCategoryRule(category) {
+  return {
+    ...category,
+    distance: normalizeDistance(category?.distance),
+    gender: normalizeGender(category?.gender),
+  };
+}
+
+function getAgeCategoryRule(edad, genero, distancia, categories = DEFAULT_CATEGORIES) {
   const age = parseInt(edad, 10);
-  if (isNaN(age)) return "—";
-  for (const cat of categories) {
-    if (age >= cat.minAge && (cat.maxAge === null || age <= cat.maxAge)) {
-      return cat.name;
+  if (Number.isNaN(age)) return null;
+
+  const participantDistance = normalizeDistance(distancia);
+  const participantGender = normalizeGender(genero);
+  const normalizedCategories = categories.map(normalizeCategoryRule);
+
+  for (const category of normalizedCategories) {
+    const distanceMatches = !category.distance || category.distance === participantDistance;
+    const genderMatches = !category.gender || category.gender === participantGender;
+    const ageMatches = age >= category.minAge && (category.maxAge === null || age <= category.maxAge);
+
+    if (distanceMatches && genderMatches && ageMatches) {
+      return category;
     }
   }
-  return "—";
+
+  return null;
 }
 
-/**
- * Returns the full category string including distance, gender and age range.
- * e.g. "10K - M Master A", "5K - F Open"
- */
+export function getCategoryName(edad, genero, distancia, categories = DEFAULT_CATEGORIES) {
+  const category = getAgeCategoryRule(edad, genero, distancia, categories);
+  return category ? category.name : "-";
+}
+
 export function getCategory(edad, genero, distancia, categories = DEFAULT_CATEGORIES) {
-  const g = String(genero).trim().toUpperCase();
-  const ageCat = getAgeCategory(edad, categories);
-  const dist = distancia ? `${distancia} - ` : "";
-  return `${dist}${g} ${ageCat}`;
+  const gender = normalizeGender(genero) || "-";
+  const categoryName = getCategoryName(edad, genero, distancia, categories);
+  const distance = normalizeDistance(distancia);
+  const prefix = distance ? `${distance} - ` : "";
+  return `${prefix}${gender} ${categoryName}`;
 }
 
-/**
- * Groups finishers by distance first, then by category within each distance.
- * Returns: { "5K": { "5K - M Open": [...], ... }, "10K": { ... } }
- */
 export function groupByDistance(finishers, participants, categories = DEFAULT_CATEGORIES) {
   const participantMap = {};
-  for (const p of participants) {
-    if (p.dorsal) participantMap[String(p.dorsal).trim()] = p;
+  for (const participant of participants) {
+    if (participant.dorsal) participantMap[String(participant.dorsal).trim()] = participant;
   }
 
   const byDistance = {};
-  const activeFinishers = finishers.filter((f) => !f.disqualified);
+  const activeFinishers = finishers.filter((finisher) => !finisher.disqualified);
 
-  activeFinishers.forEach((finisher, idx) => {
-    const p = participantMap[String(finisher.dorsal).trim()];
-    if (!p) return;
+  activeFinishers.forEach((finisher, index) => {
+    const participant = participantMap[String(finisher.dorsal).trim()];
+    if (!participant) return;
 
-    const dist = p.distancia || "—";
-    const category = getCategory(p.edad, p.genero, p.distancia, categories);
+    const distance = participant.distancia || "-";
+    const category = getCategory(participant.edad, participant.genero, participant.distancia, categories);
 
-    if (!byDistance[dist]) byDistance[dist] = {};
-    if (!byDistance[dist][category]) byDistance[dist][category] = [];
+    if (!byDistance[distance]) byDistance[distance] = {};
+    if (!byDistance[distance][category]) byDistance[distance][category] = [];
 
-    byDistance[dist][category].push({
+    byDistance[distance][category].push({
       ...finisher,
-      overallPosition: idx + 1,
-      participant: p,
+      overallPosition: index + 1,
+      participant,
       category,
     });
   });
 
-  // Assign category positions within each distance group
-  for (const dist of Object.keys(byDistance)) {
-    for (const cat of Object.keys(byDistance[dist])) {
-      byDistance[dist][cat] = byDistance[dist][cat].map((entry, i) => ({
+  for (const distance of Object.keys(byDistance)) {
+    for (const category of Object.keys(byDistance[distance])) {
+      byDistance[distance][category] = byDistance[distance][category].map((entry, index) => ({
         ...entry,
-        categoryPosition: i + 1,
+        categoryPosition: index + 1,
       }));
     }
   }
@@ -72,24 +97,20 @@ export function groupByDistance(finishers, participants, categories = DEFAULT_CA
   return byDistance;
 }
 
-/**
- * Returns top-3 absolute finishers per gender for a given distance.
- * Result: { M: [...], F: [...] } — each array has up to 3 entries
- */
 export function getAbsoluteByGender(finishers, participants, distance) {
   const participantMap = {};
-  for (const p of participants) {
-    if (p.dorsal) participantMap[String(p.dorsal).trim()] = p;
+  for (const participant of participants) {
+    if (participant.dorsal) participantMap[String(participant.dorsal).trim()] = participant;
   }
 
   const result = { M: [], F: [] };
 
-  for (const f of finishers.filter((f) => !f.disqualified)) {
-    const p = participantMap[String(f.dorsal).trim()];
-    if (!p || p.distancia !== distance) continue;
-    const g = String(p.genero).toUpperCase();
-    if ((g === "M" || g === "F") && result[g].length < 3) {
-      result[g].push({ ...f, genderPosition: result[g].length + 1, participant: p });
+  for (const finisher of finishers.filter((entry) => !entry.disqualified)) {
+    const participant = participantMap[String(finisher.dorsal).trim()];
+    if (!participant || participant.distancia !== distance) continue;
+    const gender = String(participant.genero).toUpperCase();
+    if ((gender === "M" || gender === "F") && result[gender].length < 3) {
+      result[gender].push({ ...finisher, genderPosition: result[gender].length + 1, participant });
     }
     if (result.M.length >= 3 && result.F.length >= 3) break;
   }
@@ -97,33 +118,30 @@ export function getAbsoluteByGender(finishers, participants, distance) {
   return result;
 }
 
-/**
- * Canonical category order for display within a distance group.
- */
 export function sortedCategories(categoryGroups, distancia, categories = DEFAULT_CATEGORIES) {
-  const dist = distancia ? `${distancia} - ` : "";
+  const distance = normalizeDistance(distancia);
   const ordered = [];
-  for (const cat of categories) {
-    for (const g of ["M", "F"]) {
-      const key = `${dist}${g} ${cat.name}`;
-      if (categoryGroups[key]) ordered.push(key);
+
+  for (const category of categories.map(normalizeCategoryRule)) {
+    const applicableDistance = !category.distance || category.distance === distance;
+    if (!applicableDistance) continue;
+
+    const genders = category.gender ? [category.gender] : ["M", "F"];
+    for (const gender of genders) {
+      const key = `${distance ? `${distance} - ` : ""}${gender} ${category.name}`;
+      if (categoryGroups[key] && !ordered.includes(key)) ordered.push(key);
     }
   }
-  // Any remaining not in the canonical order
+
   for (const key of Object.keys(categoryGroups)) {
     if (!ordered.includes(key)) ordered.push(key);
   }
+
   return ordered;
 }
 
-/**
- * Formats elapsed milliseconds as HH:MM:SS.cc (centésimas) o HH:MM:SS.
- * @param {number} ms - Elapsed time in milliseconds (float for sub-ms precision)
- * @param {boolean} showCentis - Show centiseconds (default true)
- * @param {boolean} forceHours - Always show HH: prefix for stable width (default false)
- */
 export function formatTime(ms, showCentis = true, forceHours = false) {
-  if (ms == null || isNaN(ms)) return forceHours ? "--:--:--.--" : "--:--.--";
+  if (ms == null || Number.isNaN(ms)) return forceHours ? "--:--:--.--" : "--:--.--";
   const totalSeconds = Math.floor(ms / 1000);
   const hours = Math.floor(totalSeconds / 3600);
   const minutes = Math.floor((totalSeconds % 3600) / 60);
