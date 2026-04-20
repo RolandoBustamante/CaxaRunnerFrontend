@@ -63,7 +63,7 @@ function CertificatePreview({ race, certificate }) {
           </div>
         </div>
         <div className="certificate-secondary-meta">
-          <span><strong>Puesto por sexo:</strong> {certificate.genderPosition ?? "-"}</span>
+          <span><strong>Puesto por genero:</strong> {certificate.genderPosition ?? "-"}</span>
           <span><strong>Categoria:</strong> {certificate.categoryName ?? "-"}</span>
           <span><strong>Puesto en categoria:</strong> {certificate.categoryPosition ?? "-"}</span>
         </div>
