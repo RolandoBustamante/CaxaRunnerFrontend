@@ -46,7 +46,7 @@ function CertificatePreview({ race, certificate }) {
         </p>
         <div className="certificate-name">{certificate.name}</div>
         <p className="certificate-copy certificate-copy-strong">
-          Concluyo oficialmente la distancia de <strong>{certificate.distance}</strong>, ocupando el puesto <strong>{certificate.position}</strong> del orden general, con un tiempo oficial de <strong>{formatCertificateTime(certificate.timeMs)}</strong>.
+          Concluyo oficialmente la distancia de <strong>{certificate.distance}</strong>, ocupando el puesto <strong>{certificate.position}</strong> en la clasificacion general de su distancia, con un tiempo oficial de <strong>{formatCertificateTime(certificate.timeMs)}</strong>.
         </p>
         <div className="certificate-grid">
           <div className="certificate-metric">
@@ -55,7 +55,7 @@ function CertificatePreview({ race, certificate }) {
           </div>
           <div className="certificate-metric">
             <div className="certificate-metric-value">{certificate.position}</div>
-            <div className="certificate-metric-label">Puesto general</div>
+            <div className="certificate-metric-label">Puesto general por distancia</div>
           </div>
           <div className="certificate-metric">
             <div className="certificate-metric-value">{certificate.dorsal}</div>
