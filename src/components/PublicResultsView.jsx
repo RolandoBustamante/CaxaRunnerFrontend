@@ -89,12 +89,14 @@ export default function PublicResultsView() {
   const [certificate, setCertificate] = useState(null);
   const [downloading, setDownloading] = useState(false);
   const [downloadingImage, setDownloadingImage] = useState(false);
+  const [noticeAccepted, setNoticeAccepted] = useState(false);
 
   useEffect(() => {
     async function fetchResults() {
       try {
         const data = await api.getPublicResultsBySlug(slug);
         setState(data);
+        setNoticeAccepted(!String(data?.race?.publicNotice || "").trim());
         setError(null);
       } catch (fetchError) {
         setError(fetchError.message);
@@ -130,6 +132,8 @@ export default function PublicResultsView() {
       String(result.name || "").toLowerCase().includes(normalized)
     ));
   }, [distanceTab, search, state?.results]);
+
+  const publicNotice = String(state?.race?.publicNotice || "").trim();
 
   async function handleValidateCertificate() {
     if (!selectedResult?.dorsal || !documentInput.trim()) return;
@@ -228,91 +232,111 @@ export default function PublicResultsView() {
             Usa el boton Ver para validar tu documento, ver el certificado y luego descargarlo en PDF o imagen.
           </div>
 
-          <div className="results-searchbar">
-            <input
-              className="results-search-input"
-              type="text"
-              placeholder="Buscar por nombre o dorsal..."
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-            />
-            {search && (
-              <button type="button" className="results-search-clear" onClick={() => setSearch("")}>
-                Limpiar
-              </button>
-            )}
-          </div>
+          <div className={`public-results-content ${!noticeAccepted && publicNotice ? "public-results-content-blocked" : ""}`}>
+            <div className="results-searchbar">
+              <input
+                className="results-search-input"
+                type="text"
+                placeholder="Buscar por nombre o dorsal..."
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+              />
+              {search && (
+                <button type="button" className="results-search-clear" onClick={() => setSearch("")}>
+                  Limpiar
+                </button>
+              )}
+            </div>
 
-          <div className="view-toggle">
-            {availableDistances.map((distance) => (
-              <button
-                key={distance}
-                type="button"
-                className={`btn btn-tab ${distanceTab === distance ? "btn-tab-active" : ""}`}
-                onClick={() => setDistanceTab(distance)}
-              >
-                {distance === "TODAS" ? "Todas" : distance}
-              </button>
-            ))}
-          </div>
+            <div className="view-toggle">
+              {availableDistances.map((distance) => (
+                <button
+                  key={distance}
+                  type="button"
+                  className={`btn btn-tab ${distanceTab === distance ? "btn-tab-active" : ""}`}
+                  onClick={() => setDistanceTab(distance)}
+                >
+                  {distance === "TODAS" ? "Todas" : distance}
+                </button>
+              ))}
+            </div>
 
-          <div className="table-wrapper">
-            <table className="data-table public-results-table">
-              <thead>
-                <tr>
-                  <th>Pos.</th>
-                  <th>Dorsal</th>
-                  <th>Nombre</th>
-                  <th>Tiempo</th>
-                  <th>Ver</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredResults.map((result) => (
-                  <tr
-                    key={result.id ?? `${result.dorsal}-${result.position ?? "dq"}`}
-                    className={`public-result-row ${result.disqualified ? "public-result-row-disabled" : ""}`}
-                  >
-                    <td>
-                      <span className={`position-badge ${result.disqualified ? "dq-badge" : ""}`}>
-                        {result.disqualified ? "DQ" : result.position}
-                      </span>
-                    </td>
-                    <td><span className="dorsal-badge">{result.dorsal}</span></td>
-                    <td className="name-cell">
-                      {result.name}
-                      {result.disqualified && result.dqReason && (
-                        <span className="dq-reason-inline"> - {result.dqReason}</span>
-                      )}
-                    </td>
-                    <td className="time-cell public-results-time">{formatCertificateTime(result.timeMs)}</td>
-                    <td className="public-results-action-cell">
-                      <button
-                        type="button"
-                        className="public-pdf-btn"
-                        title={result.disqualified ? "Certificado no disponible" : "Descargar certificado"}
-                        disabled={result.disqualified}
-                        onClick={() => {
-                          setSelectedResult(result);
-                          setDocumentInput("");
-                          setValidationError(null);
-                          setCertificate(null);
-                        }}
-                      >
-                        Ver
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-                {filteredResults.length === 0 && (
+            <div className="table-wrapper">
+              <table className="data-table public-results-table">
+                <thead>
                   <tr>
-                    <td colSpan={5} className="results-empty-filter">
-                      No hay resultados para esta busqueda.
-                    </td>
+                    <th>Pos.</th>
+                    <th>Dorsal</th>
+                    <th>Nombre</th>
+                    <th>Tiempo</th>
+                    <th>Ver</th>
                   </tr>
-                )}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {filteredResults.map((result) => (
+                    <tr
+                      key={result.id ?? `${result.dorsal}-${result.position ?? "dq"}`}
+                      className={`public-result-row ${result.disqualified ? "public-result-row-disabled" : ""}`}
+                    >
+                      <td>
+                        <span className={`position-badge ${result.disqualified ? "dq-badge" : ""}`}>
+                          {result.disqualified ? "DQ" : result.position}
+                        </span>
+                      </td>
+                      <td><span className="dorsal-badge">{result.dorsal}</span></td>
+                      <td className="name-cell">
+                        {result.name}
+                        {result.disqualified && result.dqReason && (
+                          <span className="dq-reason-inline"> - {result.dqReason}</span>
+                        )}
+                      </td>
+                      <td className="time-cell public-results-time">{formatCertificateTime(result.timeMs)}</td>
+                      <td className="public-results-action-cell">
+                        <button
+                          type="button"
+                          className="public-pdf-btn"
+                          title={result.disqualified ? "Certificado no disponible" : "Descargar certificado"}
+                          disabled={result.disqualified}
+                          onClick={() => {
+                            setSelectedResult(result);
+                            setDocumentInput("");
+                            setValidationError(null);
+                            setCertificate(null);
+                          }}
+                        >
+                          Ver
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                  {filteredResults.length === 0 && (
+                    <tr>
+                      <td colSpan={5} className="results-empty-filter">
+                        No hay resultados para esta busqueda.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {!error && !noticeAccepted && publicNotice && (
+        <div className="app-dialog-backdrop">
+          <div className="app-dialog public-notice-dialog" onClick={(event) => event.stopPropagation()}>
+            <div className="app-dialog-header">
+              <h3>Comunicado oficial</h3>
+            </div>
+            <div className="app-dialog-body">
+              <p className="public-notice-copy">{publicNotice}</p>
+            </div>
+            <div className="app-dialog-actions">
+              <button type="button" className="btn btn-primary" onClick={() => setNoticeAccepted(true)}>
+                Entendido
+              </button>
+            </div>
           </div>
         </div>
       )}

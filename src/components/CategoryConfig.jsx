@@ -28,6 +28,7 @@ export default function CategoryConfig({
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState(null);
   const [eventDate, setEventDate] = useState(toDateInputValue(race?.eventDate));
+  const [publicNotice, setPublicNotice] = useState(race?.publicNotice || "");
 
   const distanceOptions = useMemo(() => {
     const raceDistances = Array.isArray(race?.distances) ? race.distances : [];
@@ -38,8 +39,9 @@ export default function CategoryConfig({
   useEffect(() => {
     setRows(normalizeRows(categories));
     setEventDate(toDateInputValue(race?.eventDate));
+    setPublicNotice(race?.publicNotice || "");
     setMsg(null);
-  }, [categories, race?.eventDate]);
+  }, [categories, race?.eventDate, race?.publicNotice]);
 
   function setRow(index, field, value) {
     setRows((prev) => prev.map((row, rowIndex) => (
@@ -156,11 +158,14 @@ export default function CategoryConfig({
 
     setBusy(true);
     try {
-      await api.updateRace(raceId, { eventDate: eventDate || null });
+      await api.updateRace(raceId, {
+        eventDate: eventDate || null,
+        publicNotice: publicNotice.trim() || null,
+      });
       setMsg({ type: "ok", text: "Datos de la carrera guardados." });
       await onRaceUpdated?.();
     } catch (err) {
-      setMsg({ type: "error", text: err.message || "No se pudo guardar la fecha de la carrera." });
+      setMsg({ type: "error", text: err.message || "No se pudo guardar la informacion de la carrera." });
     } finally {
       setBusy(false);
     }
@@ -197,8 +202,21 @@ export default function CategoryConfig({
                 }}
               />
             </label>
+            <label className="config-notice-field">
+              <span>Comunicado publico</span>
+              <textarea
+                className="config-input config-notice-textarea"
+                rows="4"
+                value={publicNotice}
+                onChange={(event) => {
+                  setPublicNotice(event.target.value);
+                  setMsg(null);
+                }}
+                placeholder="Ej: Conforme a las bases de la competencia, las categorias que no alcanzaron el minimo requerido de participantes fueron fusionadas con las categorias correspondientes."
+              />
+            </label>
             <button className="btn btn-secondary" onClick={handleSaveRaceInfo} disabled={busy}>
-              Guardar fecha
+              Guardar datos
             </button>
             {!race.isOfficial && (
               <button className="btn btn-warning" onClick={handleMarkOfficial} disabled={busy}>

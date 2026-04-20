@@ -3554,6 +3554,22 @@ button:disabled {
   font-weight: 700;
 }
 
+.config-notice-field {
+  min-width: min(100%, 420px);
+  flex: 1 1 420px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.config-notice-textarea {
+  min-height: 96px;
+  resize: vertical;
+}
+
 .config-race-state {
   padding: 0.2rem 0.55rem;
   border-radius: 999px;
@@ -3712,6 +3728,30 @@ button:disabled {
   color: var(--text-secondary);
   text-align: center;
   font-size: 0.95rem;
+}
+
+.public-results-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.public-results-content-blocked {
+  filter: blur(4px);
+  pointer-events: none;
+  user-select: none;
+}
+
+.public-notice-dialog {
+  width: min(100%, 560px);
+}
+
+.public-notice-copy {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 0.98rem;
+  line-height: 1.65;
+  white-space: pre-wrap;
 }
 
 .public-result-row {
