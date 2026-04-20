@@ -65,7 +65,7 @@ function CertificatePreview({ race, certificate }) {
         <div className="certificate-secondary-meta">
           <span><strong>Puesto por sexo:</strong> {certificate.genderPosition ?? "-"}</span>
           <span><strong>Categoria:</strong> {certificate.categoryName ?? "-"}</span>
-          <span><strong>Puesto en categoria sin absolutos:</strong> {certificate.categoryPosition ?? "-"}</span>
+          <span><strong>Puesto en categoria:</strong> {certificate.categoryPosition ?? "-"}</span>
         </div>
         <div className="certificate-footer-meta">
           <span><strong>Fecha del evento:</strong> {race?.eventDate ? formatRaceDate(race.eventDate) : "-"}</span>
