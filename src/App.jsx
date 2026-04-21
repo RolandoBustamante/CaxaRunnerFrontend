@@ -372,6 +372,11 @@ export default function App() {
     await fetchRace();
   }, [fetchRace, selectedRaceId]);
 
+  const handleFinisherNoTime = useCallback(async (dorsal, noTime) => {
+    await api.markFinisherNoTime(dorsal, noTime, selectedRaceId);
+    await fetchRace();
+  }, [fetchRace, selectedRaceId]);
+
   const handleFinisherTimeUpdate = useCallback(async (dorsal, elapsedMs) => {
     await api.updateFinisherTime(dorsal, elapsedMs, raceState.raceStartTime, selectedRaceId);
     await fetchRace();
@@ -672,6 +677,7 @@ export default function App() {
                   onReorder={handleReorder}
                   onFinisherAdd={handleMissedFinisherAdd}
                   onFinisherDisqualify={handleFinisherDisqualify}
+                  onFinisherNoTime={handleFinisherNoTime}
                   onFinisherTimeUpdate={handleFinisherTimeUpdate}
                   onFinisherPositionUpdate={handleFinisherPositionUpdate}
                   onResetResults={handleResetResults}

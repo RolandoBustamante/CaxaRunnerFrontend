@@ -20,9 +20,10 @@ function generateCSV(finishers, participants, categories) {
     }
   }
 
-  const active = finishers.filter((finisher) => !finisher.disqualified);
-  const dqd = finishers.filter((finisher) => finisher.disqualified);
-  const all = [...active, ...dqd];
+  const active = finishers.filter((finisher) => !finisher.disqualified && !finisher.noTime);
+  const noTime = finishers.filter((finisher) => finisher.noTime);
+  const dqd = finishers.filter((finisher) => finisher.disqualified && !finisher.noTime);
+  const all = [...active, ...noTime, ...dqd];
 
   const headers = [
     "Posicion",
@@ -44,7 +45,7 @@ function generateCSV(finishers, participants, categories) {
       : "-";
 
     return [
-      finisher.disqualified ? "DQ" : finisher.position ?? index + 1,
+      finisher.noTime ? "ST" : finisher.disqualified ? "DQ" : finisher.position ?? index + 1,
       finisher.dorsal,
       participant ? participant.nombre : "-",
       participant ? participant.edad : "-",
@@ -52,8 +53,8 @@ function generateCSV(finishers, participants, categories) {
       participant ? participant.distancia : "-",
       category,
       formatTime(finisher.elapsedMs),
-      finisher.disqualified ? "DQ" : "OK",
-      finisher.dqReason || "",
+      finisher.noTime ? "ST" : finisher.disqualified ? "DQ" : "OK",
+      finisher.noTime ? "Sin tiempo" : finisher.dqReason || "",
     ];
   });
 
@@ -81,6 +82,7 @@ export default function Results({
   onReorder,
   onFinisherAdd,
   onFinisherDisqualify,
+  onFinisherNoTime,
   onFinisherTimeUpdate,
   onFinisherPositionUpdate,
   onResetResults,
@@ -136,8 +138,9 @@ export default function Results({
     );
   }, [normalizedSearch, participantMap]);
 
-  const activeFinishers = finishers.filter((finisher) => !finisher.disqualified);
-  const dqFinishers = finishers.filter((finisher) => finisher.disqualified);
+  const activeFinishers = finishers.filter((finisher) => !finisher.disqualified && !finisher.noTime);
+  const noTimeFinishers = finishers.filter((finisher) => finisher.noTime);
+  const dqFinishers = finishers.filter((finisher) => finisher.disqualified && !finisher.noTime);
   const matchesDistance = useCallback((finisher) => {
     if (distanceTab === "TODAS") return true;
     const participant = participantMap[String(finisher.dorsal).trim()];
@@ -145,6 +148,7 @@ export default function Results({
   }, [distanceTab, participantMap]);
 
   const filteredActiveFinishers = activeFinishers.filter((finisher) => matchesDistance(finisher) && matchesSearch(finisher));
+  const filteredNoTimeFinishers = noTimeFinishers.filter((finisher) => matchesDistance(finisher) && matchesSearch(finisher));
   const filteredDqFinishers = dqFinishers.filter((finisher) => matchesDistance(finisher) && matchesSearch(finisher));
   const filteredFinishers = finishers.filter((finisher) => matchesDistance(finisher) && matchesSearch(finisher));
   const finisherDorsals = new Set(finishers.map((finisher) => String(finisher.dorsal).trim()));
@@ -159,8 +163,8 @@ export default function Results({
       const dorsal = String(finisher.dorsal).trim();
       return !filteredSet.has(dorsal) || !matchesDistance(finisher);
     });
-    onReorder([...next, ...untouched, ...dqFinishers]);
-  }, [activeFinishers, dqFinishers, filteredActiveFinishers, matchesDistance, onReorder]);
+    onReorder([...next, ...untouched, ...noTimeFinishers, ...dqFinishers]);
+  }, [activeFinishers, dqFinishers, filteredActiveFinishers, matchesDistance, noTimeFinishers, onReorder]);
 
   const handleMoveDown = useCallback((index) => {
     if (index === filteredActiveFinishers.length - 1) return;
@@ -172,8 +176,8 @@ export default function Results({
       const dorsal = String(finisher.dorsal).trim();
       return !filteredSet.has(dorsal) || !matchesDistance(finisher);
     });
-    onReorder([...next, ...untouched, ...dqFinishers]);
-  }, [activeFinishers, dqFinishers, filteredActiveFinishers, matchesDistance, onReorder]);
+    onReorder([...next, ...untouched, ...noTimeFinishers, ...dqFinishers]);
+  }, [activeFinishers, dqFinishers, filteredActiveFinishers, matchesDistance, noTimeFinishers, onReorder]);
 
   const handleDisqualify = useCallback(async (dorsal, reason) => {
     setDqBusy(true);
@@ -539,6 +543,13 @@ export default function Results({
                             >
                               DQ
                             </button>
+                            <button
+                              className="reorder-btn"
+                              onClick={() => onFinisherNoTime(String(finisher.dorsal).trim(), true)}
+                              title="Marcar sin tiempo"
+                            >
+                              ST
+                            </button>
                           </td>
                         )}
                         <td>
@@ -601,6 +612,35 @@ export default function Results({
                     );
                   })}
 
+                  {filteredNoTimeFinishers.map((finisher) => {
+                    const participant = participantMap[String(finisher.dorsal).trim()];
+                    const category = participant
+                      ? getCategory(participant.edad, participant.genero, participant.distancia, categories)
+                      : "-";
+
+                    return (
+                      <tr key={finisher.dorsal + "-st"} className="row-dq">
+                        {editMode && (
+                          <td className="reorder-cell">
+                            <button
+                              className="reorder-btn undo-dq-btn"
+                              onClick={() => onFinisherNoTime(String(finisher.dorsal).trim(), false)}
+                              title="Quitar sin tiempo"
+                            >
+                              Undo ST
+                            </button>
+                          </td>
+                        )}
+                        <td><span className="position-badge dq-badge">ST</span></td>
+                        <td><span className="dorsal-badge">{finisher.dorsal}</span></td>
+                        <td className="name-cell">{participant ? participant.nombre : "-"}</td>
+                        <td><span className="category-tag">{participant ? participant.distancia : "-"}</span></td>
+                        <td><span className="category-tag">{category}</span></td>
+                        <td className="time-cell">Sin tiempo</td>
+                      </tr>
+                    );
+                  })}
+
                   {filteredDqFinishers.map((finisher) => {
                     const participant = participantMap[String(finisher.dorsal).trim()];
                     const category = participant
@@ -633,7 +673,7 @@ export default function Results({
                     );
                   })}
 
-                  {filteredActiveFinishers.length === 0 && filteredDqFinishers.length === 0 && (
+                  {filteredActiveFinishers.length === 0 && filteredNoTimeFinishers.length === 0 && filteredDqFinishers.length === 0 && (
                     <tr>
                       <td colSpan={editMode ? 7 : 6} className="results-empty-filter">
                         No hay resultados que coincidan con la busqueda.

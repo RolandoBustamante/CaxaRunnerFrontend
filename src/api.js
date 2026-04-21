@@ -145,6 +145,8 @@ export const api = {
   reorderFinishers: (finishers, raceId) => request("PUT", "/finishers/reorder", { finishers, raceId }),
   disqualifyFinisher: (dorsal, disqualified, reason, raceId) =>
     request("POST", `/finishers/${encodeURIComponent(dorsal)}/disqualify`, { disqualified, reason, raceId }),
+  markFinisherNoTime: (dorsal, noTime, raceId) =>
+    request("POST", `/finishers/${encodeURIComponent(dorsal)}/no-time`, { noTime, raceId }),
   updateFinisherTime: (dorsal, elapsedMs, raceStartTime, raceId) =>
     request("PUT", `/finishers/${encodeURIComponent(dorsal)}/time`, { elapsedMs, raceStartTime, raceId }),
   updateFinisherPosition: (dorsal, position, raceId) =>

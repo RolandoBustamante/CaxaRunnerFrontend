@@ -87,7 +87,7 @@ export function groupByDistance(finishers, participants, categories = DEFAULT_CA
   }
 
   const byDistance = {};
-  const activeFinishers = finishers.filter((finisher) => !finisher.disqualified);
+  const activeFinishers = finishers.filter((finisher) => !finisher.disqualified && !finisher.noTime);
 
   activeFinishers.forEach((finisher, index) => {
     const participant = participantMap[String(finisher.dorsal).trim()];
@@ -132,7 +132,7 @@ export function getAbsoluteByGender(finishers, participants, distance) {
     F: { seen: 0, lastSource: null, currentRank: 0 },
   };
 
-  for (const finisher of finishers.filter((entry) => !entry.disqualified)) {
+  for (const finisher of finishers.filter((entry) => !entry.disqualified && !entry.noTime)) {
     const participant = participantMap[String(finisher.dorsal).trim()];
     if (!participant || participant.distancia !== distance) continue;
     const gender = String(participant.genero).toUpperCase();
