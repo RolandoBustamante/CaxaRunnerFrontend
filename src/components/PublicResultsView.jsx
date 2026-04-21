@@ -24,6 +24,7 @@ function ImageDownloadIcon() {
 }
 
 function CertificatePreview({ race, certificate }) {
+  const isNoTimeCertificate = Boolean(certificate?.noTime);
   return (
     <div className="certificate-preview-shell">
       <div className="certificate-preview">
@@ -42,11 +43,11 @@ function CertificatePreview({ race, certificate }) {
         </div>
         <div className="certificate-title">CERTIFICADO</div>
         <p className="certificate-copy">
-          El comité organizador certifica que el corredor(a) concluyó oficialmente la prueba.
+          {isNoTimeCertificate ? "El comite organizador certifica una llegada validada sin tiempo oficial." : "El comite organizador certifica que el corredor(a) concluyo oficialmente la prueba."}
         </p>
         <div className="certificate-name">{certificate.name}</div>
         <p className="certificate-copy certificate-copy-strong">
-          Concluyó oficialmente la distancia de <strong>{certificate.distance}</strong>, ocupando el puesto <strong>{certificate.position}</strong> en la clasificación general de su distancia, con un tiempo oficial de <strong>{formatCertificateTime(certificate.timeMs)}</strong>.
+          {isNoTimeCertificate ? (<>Se certifica la llegada validada a la distancia de <strong>{certificate.distance}</strong>, con registro confirmado <strong>sin tiempo oficial</strong>.</>) : (<>Concluyo oficialmente la distancia de <strong>{certificate.distance}</strong>, ocupando el puesto <strong>{certificate.position}</strong> en la clasificacion general de su distancia, con un tiempo oficial de <strong>{formatCertificateTime(certificate.timeMs)}</strong>.</>)}
         </p>
         <div className="certificate-grid">
           <div className="certificate-metric">
@@ -125,12 +126,18 @@ export default function PublicResultsView() {
       String(result.distance || "").trim().toUpperCase() === distanceTab
     ));
 
-    if (!normalized) return results;
+    if (!normalized) {
+      return results.filter((result) => !result.noTime);
+    }
 
-    return results.filter((result) => (
-      String(result.dorsal || "").toLowerCase().includes(normalized) ||
-      String(result.name || "").toLowerCase().includes(normalized)
-    ));
+    return results.filter((result) => {
+      const matches = (
+        String(result.dorsal || "").toLowerCase().includes(normalized) ||
+        String(result.name || "").toLowerCase().includes(normalized)
+      );
+      if (!matches) return false;
+      return true;
+    });
   }, [distanceTab, search, state?.results]);
 
   const publicNotice = String(state?.race?.publicNotice || "").trim();
@@ -276,11 +283,11 @@ export default function PublicResultsView() {
                   {filteredResults.map((result) => (
                     <tr
                       key={result.id ?? `${result.dorsal}-${result.position ?? "dq"}`}
-                      className={`public-result-row ${result.disqualified ? "public-result-row-disabled" : ""}`}
+                      className={`public-result-row ${(result.disqualified || result.noTime) ? "public-result-row-disabled" : ""}`}
                     >
                       <td>
-                        <span className={`position-badge ${result.disqualified ? "dq-badge" : ""}`}>
-                          {result.disqualified ? "DQ" : result.position}
+                        <span className={`position-badge ${(result.disqualified || result.noTime) ? "dq-badge" : ""}`}>
+                          {result.noTime ? "ST" : result.disqualified ? "DQ" : result.position}
                         </span>
                       </td>
                       <td><span className="dorsal-badge">{result.dorsal}</span></td>
@@ -290,13 +297,13 @@ export default function PublicResultsView() {
                           <span className="dq-reason-inline"> - {result.dqReason}</span>
                         )}
                       </td>
-                      <td className="time-cell public-results-time">{formatCertificateTime(result.timeMs)}</td>
+                      <td className="time-cell public-results-time">{result.noTime ? "Sin tiempo" : formatCertificateTime(result.timeMs)}</td>
                       <td className="public-results-action-cell">
                         <button
                           type="button"
                           className="public-pdf-btn"
-                          title={result.disqualified ? "Certificado no disponible" : "Descargar certificado"}
-                          disabled={result.disqualified}
+                          title={(result.disqualified || result.noTime) ? "Certificado no disponible" : "Descargar certificado"}
+                          disabled={result.disqualified || result.noTime}
                           onClick={() => {
                             setSelectedResult(result);
                             setDocumentInput("");
@@ -425,3 +432,4 @@ export default function PublicResultsView() {
     </div>
   );
 }
+
