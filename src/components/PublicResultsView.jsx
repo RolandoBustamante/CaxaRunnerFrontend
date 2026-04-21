@@ -302,8 +302,8 @@ export default function PublicResultsView() {
                         <button
                           type="button"
                           className="public-pdf-btn"
-                          title={(result.disqualified || result.noTime) ? "Certificado no disponible" : "Descargar certificado"}
-                          disabled={result.disqualified || result.noTime}
+                          title={result.disqualified ? "Certificado no disponible" : "Descargar certificado"}
+                          disabled={result.disqualified}
                           onClick={() => {
                             setSelectedResult(result);
                             setDocumentInput("");
