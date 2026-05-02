@@ -133,6 +133,7 @@ export default function PublicResultsView() {
     return results.filter((result) => {
       const matches = (
         String(result.dorsal || "").toLowerCase().includes(normalized) ||
+        String(result.certificateDorsal || "").toLowerCase().includes(normalized) ||
         String(result.name || "").toLowerCase().includes(normalized)
       );
       if (!matches) return false;
@@ -141,14 +142,17 @@ export default function PublicResultsView() {
   }, [distanceTab, search, state?.results]);
 
   const publicNotice = String(state?.race?.publicNotice || "").trim();
+  const certificatesEnabled = state?.race?.certificatesEnabled !== false;
+  const showDorsalPublic = state?.race?.showDorsalPublic !== false;
 
   async function handleValidateCertificate() {
-    if (!selectedResult?.dorsal || !documentInput.trim()) return;
+    const dorsal = selectedResult?.certificateDorsal || selectedResult?.dorsal;
+    if (!dorsal || !documentInput.trim()) return;
 
     setValidating(true);
     setValidationError(null);
     try {
-      const data = await api.validateCertificateAccess(slug, selectedResult.dorsal, documentInput.trim());
+      const data = await api.validateCertificateAccess(slug, dorsal, documentInput.trim());
       setCertificate(data.certificate);
     } catch (validationFetchError) {
       setValidationError(validationFetchError.message);
@@ -168,12 +172,13 @@ export default function PublicResultsView() {
   }
 
   async function handleDownloadCertificate() {
-    if (!selectedResult?.dorsal || !documentInput.trim()) return;
+    const dorsal = selectedResult?.certificateDorsal || selectedResult?.dorsal;
+    if (!dorsal || !documentInput.trim()) return;
 
     setDownloading(true);
     setValidationError(null);
     try {
-      const { blob, fileName } = await api.downloadCertificatePdf(slug, selectedResult.dorsal, documentInput.trim());
+      const { blob, fileName } = await api.downloadCertificatePdf(slug, dorsal, documentInput.trim());
       const url = window.URL.createObjectURL(blob);
       const anchor = document.createElement("a");
       anchor.href = url;
@@ -192,12 +197,13 @@ export default function PublicResultsView() {
   }
 
   async function handleDownloadCertificateImage() {
-    if (!selectedResult?.dorsal || !documentInput.trim()) return;
+    const dorsal = selectedResult?.certificateDorsal || selectedResult?.dorsal;
+    if (!dorsal || !documentInput.trim()) return;
 
     setDownloadingImage(true);
     setValidationError(null);
     try {
-      const { blob, fileName } = await api.downloadCertificateImage(slug, selectedResult.dorsal, documentInput.trim());
+      const { blob, fileName } = await api.downloadCertificateImage(slug, dorsal, documentInput.trim());
       const url = window.URL.createObjectURL(blob);
       const anchor = document.createElement("a");
       anchor.href = url;
@@ -235,16 +241,18 @@ export default function PublicResultsView() {
 
       {!error && (
         <div className="public-results-panel">
-          <div className="public-results-note">
-            Usa el boton Ver para validar tu documento, ver el certificado y luego descargarlo en PDF o imagen.
-          </div>
+          {certificatesEnabled && (
+            <div className="public-results-note">
+              Usa el boton Ver para validar tu documento, ver el certificado y luego descargarlo en PDF o imagen.
+            </div>
+          )}
 
           <div className={`public-results-content ${!noticeAccepted && publicNotice ? "public-results-content-blocked" : ""}`}>
             <div className="results-searchbar">
               <input
                 className="results-search-input"
                 type="text"
-                placeholder="Buscar por nombre o dorsal..."
+                  placeholder={showDorsalPublic ? "Buscar por nombre o dorsal..." : "Buscar por nombre..."}
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
               />
@@ -273,10 +281,10 @@ export default function PublicResultsView() {
                 <thead>
                   <tr>
                     <th>Pos.</th>
-                    <th>Dorsal</th>
+                    {showDorsalPublic && <th>Dorsal</th>}
                     <th>Nombre</th>
                     <th>Tiempo</th>
-                    <th>Ver</th>
+                    {certificatesEnabled && <th>Ver</th>}
                   </tr>
                 </thead>
                 <tbody>
@@ -290,7 +298,7 @@ export default function PublicResultsView() {
                           {result.noTime ? "ST" : result.disqualified ? "DQ" : result.position}
                         </span>
                       </td>
-                      <td><span className="dorsal-badge">{result.dorsal}</span></td>
+                      {showDorsalPublic && <td><span className="dorsal-badge">{result.dorsal}</span></td>}
                       <td className="name-cell">
                         {result.name}
                         {result.disqualified && result.dqReason && (
@@ -298,27 +306,29 @@ export default function PublicResultsView() {
                         )}
                       </td>
                       <td className="time-cell public-results-time">{result.noTime ? "Sin tiempo" : formatCertificateTime(result.timeMs)}</td>
-                      <td className="public-results-action-cell">
-                        <button
-                          type="button"
-                          className="public-pdf-btn"
-                          title={result.disqualified ? "Certificado no disponible" : "Descargar certificado"}
-                          disabled={result.disqualified}
-                          onClick={() => {
-                            setSelectedResult(result);
-                            setDocumentInput("");
-                            setValidationError(null);
-                            setCertificate(null);
-                          }}
-                        >
-                          Ver
-                        </button>
-                      </td>
+                      {certificatesEnabled && (
+                        <td className="public-results-action-cell">
+                          <button
+                            type="button"
+                            className="public-pdf-btn"
+                            title={result.disqualified ? "Certificado no disponible" : "Descargar certificado"}
+                            disabled={result.disqualified}
+                            onClick={() => {
+                              setSelectedResult(result);
+                              setDocumentInput("");
+                              setValidationError(null);
+                              setCertificate(null);
+                            }}
+                          >
+                            Ver
+                          </button>
+                        </td>
+                      )}
                     </tr>
                   ))}
                   {filteredResults.length === 0 && (
                     <tr>
-                      <td colSpan={5} className="results-empty-filter">
+                      <td colSpan={3 + (showDorsalPublic ? 1 : 0) + (certificatesEnabled ? 1 : 0)} className="results-empty-filter">
                         No hay resultados para esta busqueda.
                       </td>
                     </tr>
@@ -348,7 +358,7 @@ export default function PublicResultsView() {
         </div>
       )}
 
-      {selectedResult && (
+      {certificatesEnabled && selectedResult && (
         <div className="app-dialog-backdrop" onClick={closeDialog}>
           <div className="app-dialog certificate-dialog" onClick={(event) => event.stopPropagation()}>
             <div className="app-dialog-header">
@@ -360,7 +370,7 @@ export default function PublicResultsView() {
               <>
                 <div className="app-dialog-body">
                   <p className="certificate-help">
-                    Para descargar el certificado del dorsal <strong>{selectedResult.dorsal}</strong>, ingresa tu número de documento.
+                    Para descargar el certificado, ingresa tu número de documento.
                     Puede ser DNI, pasaporte u otro documento registrado al inscribirte.
                   </p>
                   <label className="login-label" htmlFor="certificate-document">Documento</label>

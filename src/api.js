@@ -139,6 +139,8 @@ export const api = {
 
   addFinisher: (dorsal, timestamp, elapsedMs, raceId) =>
     request("POST", "/finishers", { dorsal, timestamp, elapsedMs, raceId }),
+  importFinishers: (finishers, raceId, replace = false) =>
+    request("POST", "/finishers/import", { finishers, raceId, replace }),
   addMissedFinisher: (dorsal, timestamp, elapsedMs, raceId) =>
     request("POST", "/finishers", { dorsal, timestamp, elapsedMs, reorder: true, raceId }),
   removeFinisher: (dorsal, raceId) => request("DELETE", withRaceId(`/finishers/${dorsal}`, raceId)),

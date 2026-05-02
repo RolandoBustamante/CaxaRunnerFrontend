@@ -1,4 +1,5 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
+import * as XLSX from "xlsx";
 import {
   formatTime,
   getCategory,
@@ -73,6 +74,45 @@ function downloadCSV(content, filename) {
   URL.revokeObjectURL(url);
 }
 
+function normalizeHeader(key) {
+  return String(key || "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+}
+
+function getRowValue(row, keys) {
+  const normalized = {};
+  for (const key in row) {
+    normalized[normalizeHeader(key)] = row[key];
+  }
+  for (const key of keys) {
+    const value = normalized[key];
+    if (value !== undefined && value !== null && String(value).trim() !== "") return value;
+  }
+  return "";
+}
+
+function parseTimeToMs(value) {
+  const text = String(value || "").trim();
+  if (!text) return null;
+  const normalized = text.replace(",", ".");
+  const parts = normalized.split(":").map((part) => part.trim());
+  if (parts.some((part) => part === "" || Number.isNaN(Number(part)))) return null;
+
+  if (parts.length === 1) return Math.round(Number(parts[0]) * 1000);
+  if (parts.length === 2) {
+    const [minutes, seconds] = parts.map(Number);
+    return Math.round(((minutes * 60) + seconds) * 1000);
+  }
+  if (parts.length === 3) {
+    const [hours, minutes, seconds] = parts.map(Number);
+    return Math.round(((hours * 3600) + (minutes * 60) + seconds) * 1000);
+  }
+  return null;
+}
+
 export default function Results({
   participants,
   finishers,
@@ -81,6 +121,7 @@ export default function Results({
   race,
   onReorder,
   onFinisherAdd,
+  onFinishersImport,
   onFinisherDisqualify,
   onFinisherNoTime,
   onFinisherTimeUpdate,
@@ -105,6 +146,12 @@ export default function Results({
 
   const [editingTime, setEditingTime] = useState(null);
   const [editingPosition, setEditingPosition] = useState(null);
+  const [importOpen, setImportOpen] = useState(false);
+  const [importReplace, setImportReplace] = useState(false);
+  const [importBusy, setImportBusy] = useState(false);
+  const [importErrors, setImportErrors] = useState([]);
+  const [importResult, setImportResult] = useState(null);
+  const importInputRef = useRef(null);
 
   const participantMap = {};
   for (const participant of participants) {
@@ -308,6 +355,67 @@ export default function Results({
     window.setTimeout(() => setCopied(false), 1800);
   }, [race]);
 
+  const handleResultsFile = useCallback((file) => {
+    if (!file || !onFinishersImport) return;
+    setImportBusy(true);
+    setImportErrors([]);
+    setImportResult(null);
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      try {
+        const workbook = XLSX.read(new Uint8Array(event.target.result), { type: "array" });
+        const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+        const rawRows = XLSX.utils.sheet_to_json(worksheet, { defval: "", raw: false });
+        if (rawRows.length === 0) {
+          setImportErrors([{ row: 0, errors: ["El archivo esta vacio o no tiene datos en la primera hoja"] }]);
+          return;
+        }
+
+        const seen = new Set();
+        const errors = [];
+        const mapped = rawRows.map((row, index) => {
+          const dorsal = String(getRowValue(row, ["dorsal", "numero", "nro", "bib"])).trim().replace(/\.0$/, "");
+          const elapsedMs = parseTimeToMs(getRowValue(row, ["tiempo", "time", "marca"]));
+          const positionValue = String(getRowValue(row, ["puesto", "posicion", "position", "pos"])).trim();
+          const position = Number.parseInt(positionValue, 10);
+          const rowErrors = [];
+
+          if (!dorsal) rowErrors.push("Dorsal vacio");
+          if (elapsedMs == null || elapsedMs < 0) rowErrors.push("Tiempo invalido");
+          if (positionValue && (!Number.isInteger(position) || position <= 0)) rowErrors.push("Puesto invalido");
+          if (dorsal && seen.has(dorsal)) rowErrors.push("Dorsal repetido en el archivo");
+          if (dorsal) seen.add(dorsal);
+          if (rowErrors.length > 0) errors.push({ row: index + 2, errors: rowErrors });
+
+          return {
+            dorsal,
+            elapsedMs,
+            ...(Number.isInteger(position) && position > 0 ? { position } : {}),
+          };
+        });
+
+        if (errors.length > 0) {
+          setImportErrors(errors);
+          return;
+        }
+
+        const result = await onFinishersImport(mapped, importReplace);
+        setImportResult(result);
+        if (importInputRef.current) importInputRef.current.value = "";
+      } catch (err) {
+        setImportErrors([{ row: 0, errors: [err.message || "No se pudo importar el archivo"] }]);
+      } finally {
+        setImportBusy(false);
+      }
+    };
+    reader.onerror = () => {
+      setImportBusy(false);
+      setImportErrors([{ row: 0, errors: ["No se pudo leer el archivo"] }]);
+    };
+    reader.readAsArrayBuffer(file);
+  }, [importReplace, onFinishersImport]);
+
   const distanceGroups = groupByDistance(filteredFinishers, participants, categories);
   const distances = Object.keys(distanceGroups).sort();
 
@@ -343,6 +451,9 @@ export default function Results({
           <button className="btn btn-export" onClick={handleExport}>
             Exportar CSV
           </button>
+          <button className="btn btn-secondary" onClick={() => setImportOpen((value) => !value)}>
+            Importar resultados
+          </button>
           <button
             className="btn btn-secondary"
             onClick={handleCopyPublicResults}
@@ -361,6 +472,53 @@ export default function Results({
       </div>
 
       {copied && <div className="results-copy-ok">Enlace de resultados copiado</div>}
+
+      {importOpen && (
+        <div className="missed-finisher-panel">
+          <h4 className="missed-finisher-title">Importar resultados desde Excel</h4>
+          <div className="missed-finisher-form">
+            <div className="missed-field" style={{ flex: 1 }}>
+              <label className="missed-label">Archivo .xlsx o .xls</label>
+              <input
+                ref={importInputRef}
+                className="missed-input"
+                type="file"
+                accept=".xlsx,.xls"
+                disabled={importBusy}
+                onChange={(event) => handleResultsFile(event.target.files?.[0])}
+              />
+            </div>
+            <label className="config-checkbox-field">
+              <input
+                type="checkbox"
+                checked={importReplace}
+                onChange={(event) => setImportReplace(event.target.checked)}
+                disabled={importBusy}
+              />
+              <span>Reemplazar resultados actuales</span>
+            </label>
+          </div>
+          <p className="drop-hint">Columnas esperadas: Puesto, Dorsal, Tiempo. Nombre puede estar, pero se toma desde participantes.</p>
+          {importBusy && <div className="results-copy-ok">Importando resultados...</div>}
+          {importResult && (
+            <div className="results-copy-ok">
+              Resultados importados: {importResult.importedCount}. Actualizados: {importResult.updatedCount}. Nuevos: {importResult.createdCount}.
+            </div>
+          )}
+          {importErrors.length > 0 && (
+            <div className="error-panel">
+              <h3 className="error-title">Errores de importacion ({importErrors.length})</h3>
+              <ul className="error-list">
+                {importErrors.map((item, index) => (
+                  <li key={index}>
+                    <span className="error-row">Fila {item.row}:</span> {item.errors.join(", ")}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="results-searchbar">
         <input

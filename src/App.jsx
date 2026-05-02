@@ -15,6 +15,7 @@ import { formatRaceDate } from "./utils/dates";
 
 const POLL_INTERVAL = 2000;
 const POLLING_TABS = new Set(["meta", "resultados", "cronometro"]);
+const DEFAULT_RACE_DISTANCES = "5K, 10K";
 
 function getTabs(role, raceStarted, raceClosed) {
   const tabs = [
@@ -62,6 +63,9 @@ export default function App() {
   const [createRaceOpen, setCreateRaceOpen] = useState(false);
   const [newRaceName, setNewRaceName] = useState("");
   const [newRaceDate, setNewRaceDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [newRaceDistances, setNewRaceDistances] = useState(DEFAULT_RACE_DISTANCES);
+  const [newRaceCertificatesEnabled, setNewRaceCertificatesEnabled] = useState(true);
+  const [newRaceShowDorsalPublic, setNewRaceShowDorsalPublic] = useState(true);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const pollRef = useRef(null);
   const errorCount = useRef(0);
@@ -352,6 +356,13 @@ export default function App() {
     await fetchRace();
   }, [fetchRace, selectedRaceId]);
 
+  const handleFinishersImport = useCallback(async (finishers, replace) => {
+    const result = await api.importFinishers(finishers, selectedRaceId, replace);
+    await fetchRace();
+    await refreshRaces();
+    return result;
+  }, [fetchRace, refreshRaces, selectedRaceId]);
+
   const handleFinisherRemove = useCallback(async (dorsal) => {
     await api.removeFinisher(dorsal, selectedRaceId);
     await fetchRace();
@@ -394,20 +405,37 @@ export default function App() {
   const handleCreateRace = useCallback(async () => {
     const name = newRaceName.trim();
     if (!name) return;
+    const distances = [
+      ...new Set(
+        newRaceDistances
+          .split(",")
+          .map((distance) => distance.trim().toUpperCase())
+          .filter(Boolean)
+      ),
+    ];
 
     setCreatingRace(true);
     try {
-      const race = await api.createRace({ name, eventDate: newRaceDate || null });
+      const race = await api.createRace({
+        name,
+        eventDate: newRaceDate || null,
+        distances,
+        certificatesEnabled: newRaceCertificatesEnabled,
+        showDorsalPublic: newRaceShowDorsalPublic,
+      });
       await refreshRaces();
       setSelectedRaceId(race.id);
       setActiveTab("participantes");
       setCreateRaceOpen(false);
       setNewRaceName("");
       setNewRaceDate(new Date().toISOString().slice(0, 10));
+      setNewRaceDistances(DEFAULT_RACE_DISTANCES);
+      setNewRaceCertificatesEnabled(true);
+      setNewRaceShowDorsalPublic(true);
     } finally {
       setCreatingRace(false);
     }
-  }, [newRaceDate, newRaceName, refreshRaces]);
+  }, [newRaceCertificatesEnabled, newRaceDate, newRaceDistances, newRaceName, newRaceShowDorsalPublic, refreshRaces]);
 
   if (!currentUser) return <Login onLogin={handleLogin} />;
 
@@ -542,6 +570,9 @@ export default function App() {
                   setCreateRaceOpen(false);
                   setNewRaceName("");
                   setNewRaceDate(new Date().toISOString().slice(0, 10));
+                  setNewRaceDistances(DEFAULT_RACE_DISTANCES);
+                  setNewRaceCertificatesEnabled(true);
+                  setNewRaceShowDorsalPublic(true);
                 }
               }}
           >
@@ -559,6 +590,9 @@ export default function App() {
                         setCreateRaceOpen(false);
                         setNewRaceName("");
                         setNewRaceDate(new Date().toISOString().slice(0, 10));
+                        setNewRaceDistances(DEFAULT_RACE_DISTANCES);
+                        setNewRaceCertificatesEnabled(true);
+                        setNewRaceShowDorsalPublic(true);
                       }
                     }}
                   disabled={creatingRace}
@@ -592,6 +626,34 @@ export default function App() {
                     value={newRaceDate}
                     onChange={(event) => setNewRaceDate(event.target.value)}
                   />
+                  <label className="login-label" htmlFor="new-race-distances">Distancias</label>
+                  <input
+                    id="new-race-distances"
+                    className="login-input"
+                    type="text"
+                    value={newRaceDistances}
+                    onChange={(event) => setNewRaceDistances(event.target.value)}
+                    placeholder="Ej: 5K o 5K, 10K"
+                    disabled={creatingRace}
+                  />
+                  <label className="config-checkbox-field">
+                    <input
+                      type="checkbox"
+                      checked={newRaceCertificatesEnabled}
+                      onChange={(event) => setNewRaceCertificatesEnabled(event.target.checked)}
+                      disabled={creatingRace}
+                    />
+                    <span>Generar certificados en resultados publicos</span>
+                  </label>
+                  <label className="config-checkbox-field">
+                    <input
+                      type="checkbox"
+                      checked={newRaceShowDorsalPublic}
+                      onChange={(event) => setNewRaceShowDorsalPublic(event.target.checked)}
+                      disabled={creatingRace}
+                    />
+                    <span>Mostrar dorsal en resultados publicos</span>
+                  </label>
                 </div>
 
                 <div className="app-dialog-actions">
@@ -602,6 +664,9 @@ export default function App() {
                       setCreateRaceOpen(false);
                       setNewRaceName("");
                       setNewRaceDate(new Date().toISOString().slice(0, 10));
+                      setNewRaceDistances(DEFAULT_RACE_DISTANCES);
+                      setNewRaceCertificatesEnabled(true);
+                      setNewRaceShowDorsalPublic(true);
                     }}
                     disabled={creatingRace}
                   >
@@ -676,6 +741,7 @@ export default function App() {
                   race={selectedRace}
                   onReorder={handleReorder}
                   onFinisherAdd={handleMissedFinisherAdd}
+                  onFinishersImport={handleFinishersImport}
                   onFinisherDisqualify={handleFinisherDisqualify}
                   onFinisherNoTime={handleFinisherNoTime}
                   onFinisherTimeUpdate={handleFinisherTimeUpdate}

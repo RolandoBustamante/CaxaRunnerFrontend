@@ -29,6 +29,11 @@ export default function CategoryConfig({
   const [msg, setMsg] = useState(null);
   const [eventDate, setEventDate] = useState(toDateInputValue(race?.eventDate));
   const [publicNotice, setPublicNotice] = useState(race?.publicNotice || "");
+  const [distancesText, setDistancesText] = useState(
+    Array.isArray(race?.distances) ? race.distances.join(", ") : ""
+  );
+  const [certificatesEnabled, setCertificatesEnabled] = useState(race?.certificatesEnabled !== false);
+  const [showDorsalPublic, setShowDorsalPublic] = useState(race?.showDorsalPublic !== false);
 
   const distanceOptions = useMemo(() => {
     const raceDistances = Array.isArray(race?.distances) ? race.distances : [];
@@ -40,8 +45,11 @@ export default function CategoryConfig({
     setRows(normalizeRows(categories));
     setEventDate(toDateInputValue(race?.eventDate));
     setPublicNotice(race?.publicNotice || "");
+    setDistancesText(Array.isArray(race?.distances) ? race.distances.join(", ") : "");
+    setCertificatesEnabled(race?.certificatesEnabled !== false);
+    setShowDorsalPublic(race?.showDorsalPublic !== false);
     setMsg(null);
-  }, [categories, race?.eventDate, race?.publicNotice]);
+  }, [categories, race?.certificatesEnabled, race?.distances, race?.eventDate, race?.publicNotice, race?.showDorsalPublic]);
 
   function setRow(index, field, value) {
     setRows((prev) => prev.map((row, rowIndex) => (
@@ -155,12 +163,23 @@ export default function CategoryConfig({
 
   async function handleSaveRaceInfo() {
     if (!raceId) return;
+    const distances = [
+      ...new Set(
+        distancesText
+          .split(",")
+          .map((distance) => distance.trim().toUpperCase())
+          .filter(Boolean)
+      ),
+    ];
 
     setBusy(true);
     try {
       await api.updateRace(raceId, {
         eventDate: eventDate || null,
         publicNotice: publicNotice.trim() || null,
+        distances,
+        certificatesEnabled,
+        showDorsalPublic,
       });
       setMsg({ type: "ok", text: "Datos de la carrera guardados." });
       await onRaceUpdated?.();
@@ -214,6 +233,41 @@ export default function CategoryConfig({
                 }}
                 placeholder="Ej: Conforme a las bases de la competencia, las categorías que no alcanzaron el mínimo requerido de participantes fueron fusionadas con las categorías correspondientes."
               />
+            </label>
+            <label className="config-date-field config-distances-field">
+              <span>Distancias</span>
+              <input
+                className="config-input"
+                type="text"
+                value={distancesText}
+                onChange={(event) => {
+                  setDistancesText(event.target.value);
+                  setMsg(null);
+                }}
+                placeholder="Ej: 5K, 10K"
+              />
+            </label>
+            <label className="config-checkbox-field">
+              <input
+                type="checkbox"
+                checked={certificatesEnabled}
+                onChange={(event) => {
+                  setCertificatesEnabled(event.target.checked);
+                  setMsg(null);
+                }}
+              />
+              <span>Generar certificados en resultados publicos</span>
+            </label>
+            <label className="config-checkbox-field">
+              <input
+                type="checkbox"
+                checked={showDorsalPublic}
+                onChange={(event) => {
+                  setShowDorsalPublic(event.target.checked);
+                  setMsg(null);
+                }}
+              />
+              <span>Mostrar dorsal en resultados publicos</span>
             </label>
             <button className="btn btn-secondary" onClick={handleSaveRaceInfo} disabled={busy}>
               Guardar datos
