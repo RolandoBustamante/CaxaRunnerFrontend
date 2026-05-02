@@ -79,16 +79,19 @@ export default function ParticipantUpload({
   const [formSuccess, setFormSuccess] = useState("");
   const [dniLookupStatus, setDniLookupStatus] = useState("idle");
   const [dorsalUploadResult, setDorsalUploadResult] = useState(null);
+  const [excelBusy, setExcelBusy] = useState(false);
+  const [excelSuccess, setExcelSuccess] = useState("");
   const fileInputRef = useRef(null);
 
   const resetExcelState = useCallback(() => {
     setParseErrors([]);
     setFileName("");
     setDorsalUploadResult(null);
+    setExcelSuccess("");
     if (fileInputRef.current) fileInputRef.current.value = "";
   }, []);
 
-  const processParticipantsFile = useCallback((rawRows) => {
+  const processParticipantsFile = useCallback(async (rawRows) => {
     const firstRow = rawRows[0];
     const keys = Object.keys(firstRow).map(normalizeKey);
     const missing = PARTICIPANT_REQUIRED_FIELDS.filter((field) => !keys.includes(field));
@@ -110,7 +113,15 @@ export default function ParticipantUpload({
 
     const valid = mapped.filter((participant) => validateParticipant(participant).length === 0);
     if (valid.length > 0) {
-      onParticipantsLoad(valid);
+      setExcelBusy(true);
+      try {
+        await onParticipantsLoad(valid);
+        setExcelSuccess(`${valid.length} participantes cargados correctamente.`);
+      } catch (err) {
+        setParseErrors([{ row: 0, errors: [err.message || "No se pudo cargar participantes"] }]);
+      } finally {
+        setExcelBusy(false);
+      }
     }
   }, [onParticipantsLoad]);
 
@@ -156,6 +167,8 @@ export default function ParticipantUpload({
     setFileName(file.name);
     setParseErrors([]);
     setDorsalUploadResult(null);
+    setExcelSuccess("");
+    setExcelBusy(true);
 
     const reader = new FileReader();
     reader.onload = async (event) => {
@@ -176,9 +189,11 @@ export default function ParticipantUpload({
           return;
         }
 
-        processParticipantsFile(rawRows);
+        await processParticipantsFile(rawRows);
       } catch (err) {
         setParseErrors([{ row: 0, errors: [`Error al leer el archivo: ${err.message}`] }]);
+      } finally {
+        setExcelBusy(false);
       }
     };
     reader.readAsArrayBuffer(file);
@@ -314,13 +329,17 @@ export default function ParticipantUpload({
             onKeyDown={(event) => event.key === "Enter" && fileInputRef.current?.click()}
             aria-label="Zona de carga de archivos"
           >
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".xlsx,.xls"
-              onChange={handleFileChange}
-              style={{ display: "none" }}
-            />
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".xlsx,.xls"
+                onChange={handleFileChange}
+                onClick={(event) => {
+                  event.currentTarget.value = "";
+                }}
+                disabled={excelBusy}
+                style={{ display: "none" }}
+              />
             {loadedCount === 0 ? (
               <>
                 <div className="drop-icon">Archivo</div>
@@ -356,6 +375,9 @@ export default function ParticipantUpload({
               </ul>
             </div>
           )}
+
+          {excelBusy && <div className="results-copy-ok">Cargando archivo...</div>}
+          {excelSuccess && mode === "excel" && <div className="results-copy-ok">{excelSuccess}</div>}
 
           {mode === "dorsales" && dorsalUploadResult && (
             <div className="format-guide">
