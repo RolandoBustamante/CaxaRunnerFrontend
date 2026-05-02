@@ -108,8 +108,24 @@ export default function ParticipantUpload({
       })
       .filter(Boolean);
 
+    const dorsalRows = new Map();
+    mapped.forEach((participant, index) => {
+      const dorsal = String(participant.dorsal || "").trim();
+      if (!dorsal) return;
+      if (!dorsalRows.has(dorsal)) dorsalRows.set(dorsal, []);
+      dorsalRows.get(dorsal).push(index + 2);
+    });
+    dorsalRows.forEach((rows, dorsal) => {
+      if (rows.length > 1) {
+        rows.forEach((row) => {
+          errors.push({ row, errors: [`Dorsal repetido en el archivo: ${dorsal} (filas ${rows.join(", ")})`] });
+        });
+      }
+    });
+
     setParseErrors(errors);
     setDorsalUploadResult(null);
+    if (errors.length > 0) return;
 
     const valid = mapped.filter((participant) => validateParticipant(participant).length === 0);
     if (valid.length > 0) {
