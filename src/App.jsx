@@ -16,6 +16,7 @@ import { formatRaceDate } from "./utils/dates";
 const POLL_INTERVAL = 2000;
 const POLLING_TABS = new Set(["meta", "resultados", "cronometro"]);
 const DEFAULT_RACE_DISTANCES = "5K, 10K";
+const DEFAULT_CERTIFICATE_TEMPLATE = "classic";
 
 function getTabs(role, raceStarted, raceClosed) {
   const tabs = [
@@ -66,6 +67,7 @@ export default function App() {
   const [newRaceDistances, setNewRaceDistances] = useState(DEFAULT_RACE_DISTANCES);
   const [newRaceCertificatesEnabled, setNewRaceCertificatesEnabled] = useState(true);
   const [newRaceShowDorsalPublic, setNewRaceShowDorsalPublic] = useState(true);
+  const [newRaceCertificateTemplate, setNewRaceCertificateTemplate] = useState(DEFAULT_CERTIFICATE_TEMPLATE);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const pollRef = useRef(null);
   const errorCount = useRef(0);
@@ -422,6 +424,7 @@ export default function App() {
         distances,
         certificatesEnabled: newRaceCertificatesEnabled,
         showDorsalPublic: newRaceShowDorsalPublic,
+        certificateTemplate: newRaceCertificateTemplate,
       });
       await refreshRaces();
       setSelectedRaceId(race.id);
@@ -432,10 +435,11 @@ export default function App() {
       setNewRaceDistances(DEFAULT_RACE_DISTANCES);
       setNewRaceCertificatesEnabled(true);
       setNewRaceShowDorsalPublic(true);
+      setNewRaceCertificateTemplate(DEFAULT_CERTIFICATE_TEMPLATE);
     } finally {
       setCreatingRace(false);
     }
-  }, [newRaceCertificatesEnabled, newRaceDate, newRaceDistances, newRaceName, newRaceShowDorsalPublic, refreshRaces]);
+  }, [newRaceCertificateTemplate, newRaceCertificatesEnabled, newRaceDate, newRaceDistances, newRaceName, newRaceShowDorsalPublic, refreshRaces]);
 
   if (!currentUser) return <Login onLogin={handleLogin} />;
 
@@ -573,6 +577,7 @@ export default function App() {
                   setNewRaceDistances(DEFAULT_RACE_DISTANCES);
                   setNewRaceCertificatesEnabled(true);
                   setNewRaceShowDorsalPublic(true);
+                  setNewRaceCertificateTemplate(DEFAULT_CERTIFICATE_TEMPLATE);
                 }
               }}
           >
@@ -593,6 +598,7 @@ export default function App() {
                         setNewRaceDistances(DEFAULT_RACE_DISTANCES);
                         setNewRaceCertificatesEnabled(true);
                         setNewRaceShowDorsalPublic(true);
+                        setNewRaceCertificateTemplate(DEFAULT_CERTIFICATE_TEMPLATE);
                       }
                     }}
                   disabled={creatingRace}
@@ -654,6 +660,17 @@ export default function App() {
                     />
                     <span>Mostrar dorsal en resultados publicos</span>
                   </label>
+                  <label className="login-label" htmlFor="new-race-certificate-template">Diseño de certificado</label>
+                  <select
+                    id="new-race-certificate-template"
+                    className="login-input"
+                    value={newRaceCertificateTemplate}
+                    onChange={(event) => setNewRaceCertificateTemplate(event.target.value)}
+                    disabled={creatingRace || !newRaceCertificatesEnabled}
+                  >
+                    <option value="classic">Clásico</option>
+                    <option value="trail">Trail verde</option>
+                  </select>
                 </div>
 
                 <div className="app-dialog-actions">
@@ -667,6 +684,7 @@ export default function App() {
                       setNewRaceDistances(DEFAULT_RACE_DISTANCES);
                       setNewRaceCertificatesEnabled(true);
                       setNewRaceShowDorsalPublic(true);
+                      setNewRaceCertificateTemplate(DEFAULT_CERTIFICATE_TEMPLATE);
                     }}
                     disabled={creatingRace}
                   >

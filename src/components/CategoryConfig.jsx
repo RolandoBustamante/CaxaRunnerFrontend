@@ -34,6 +34,7 @@ export default function CategoryConfig({
   );
   const [certificatesEnabled, setCertificatesEnabled] = useState(race?.certificatesEnabled !== false);
   const [showDorsalPublic, setShowDorsalPublic] = useState(race?.showDorsalPublic !== false);
+  const [certificateTemplate, setCertificateTemplate] = useState(race?.certificateTemplate || "classic");
 
   const distanceOptions = useMemo(() => {
     const raceDistances = Array.isArray(race?.distances) ? race.distances : [];
@@ -48,8 +49,9 @@ export default function CategoryConfig({
     setDistancesText(Array.isArray(race?.distances) ? race.distances.join(", ") : "");
     setCertificatesEnabled(race?.certificatesEnabled !== false);
     setShowDorsalPublic(race?.showDorsalPublic !== false);
+    setCertificateTemplate(race?.certificateTemplate || "classic");
     setMsg(null);
-  }, [categories, race?.certificatesEnabled, race?.distances, race?.eventDate, race?.publicNotice, race?.showDorsalPublic]);
+  }, [categories, race?.certificateTemplate, race?.certificatesEnabled, race?.distances, race?.eventDate, race?.publicNotice, race?.showDorsalPublic]);
 
   function setRow(index, field, value) {
     setRows((prev) => prev.map((row, rowIndex) => (
@@ -180,6 +182,7 @@ export default function CategoryConfig({
         distances,
         certificatesEnabled,
         showDorsalPublic,
+        certificateTemplate,
       });
       setMsg({ type: "ok", text: "Datos de la carrera guardados." });
       await onRaceUpdated?.();
@@ -268,6 +271,21 @@ export default function CategoryConfig({
                 }}
               />
               <span>Mostrar dorsal en resultados publicos</span>
+            </label>
+            <label className="config-date-field config-distances-field">
+              <span>Diseño de certificado</span>
+              <select
+                className="config-input"
+                value={certificateTemplate}
+                onChange={(event) => {
+                  setCertificateTemplate(event.target.value);
+                  setMsg(null);
+                }}
+                disabled={!certificatesEnabled}
+              >
+                <option value="classic">Clásico</option>
+                <option value="trail">Trail verde</option>
+              </select>
             </label>
             <button className="btn btn-secondary" onClick={handleSaveRaceInfo} disabled={busy}>
               Guardar datos

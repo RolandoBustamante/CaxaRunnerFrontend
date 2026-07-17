@@ -1795,6 +1795,13 @@ button:disabled {
 }
 
 /* Search */
+.acred-search-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(190px, 0.38fr);
+  gap: 0.75rem;
+  align-items: stretch;
+}
+
 .acred-search-wrapper {
   position: relative;
 }
@@ -2289,6 +2296,45 @@ button:disabled {
   flex-wrap: wrap;
 }
 
+.acred-edit-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.acred-edit-grid {
+  display: grid;
+  grid-template-columns: minmax(120px, 0.8fr) minmax(220px, 2fr) repeat(4, minmax(86px, 0.7fr));
+  gap: 0.75rem;
+  align-items: end;
+}
+
+.acred-table-input {
+  min-width: 5.5rem;
+  height: 2.25rem;
+  padding: 0.45rem 0.55rem;
+  font-size: 0.82rem;
+}
+
+.acred-table-name-input {
+  min-width: 12rem;
+}
+
+.acred-inline-edit-group {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-wrap: nowrap;
+}
+
+.acred-inline-age {
+  width: 4.25rem;
+}
+
+.acred-inline-select {
+  width: 5.25rem;
+}
+
 .acred-dorsal-input {
   width: 70px;
   padding: 0.25rem 0.4rem;
@@ -2514,6 +2560,7 @@ button:disabled {
   .podium-position { font-size: 1.1rem; }
 
   /* Acreditación — búsqueda full width */
+  .acred-search-row { grid-template-columns: 1fr; }
   .acred-search-input { font-size: 1rem; }
   .acred-container { gap: 1rem; }
   .acred-section { padding: 0.75rem; }
@@ -3840,6 +3887,101 @@ button:disabled {
   margin-bottom: -6.5rem;
 }
 
+.certificate-preview-trail {
+  background:
+    radial-gradient(circle at 18% 10%, rgba(188, 216, 82, 0.3), transparent 26%),
+    linear-gradient(180deg, #014353 0%, #00615b 44%, #3d7a28 72%, #c57a00 100%);
+  border: 0;
+  border-radius: 12px;
+  padding: 1.5rem 1.75rem 1.25rem;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.certificate-preview-trail .certificate-seal,
+.certificate-preview-trail .certificate-watermark-hidden {
+  display: none;
+}
+
+.certificate-preview-trail::before {
+  display: none;
+}
+
+.certificate-trail-lines {
+  position: absolute;
+  inset: 0;
+  opacity: 0.16;
+  background-image:
+    repeating-radial-gradient(ellipse at 30% 30%, transparent 0 16px, rgba(255,255,255,0.45) 17px 18px),
+    repeating-radial-gradient(ellipse at 70% 65%, transparent 0 22px, rgba(255,255,255,0.24) 23px 24px);
+  mix-blend-mode: screen;
+}
+
+.certificate-trail-watermark {
+  position: absolute;
+  left: 50%;
+  top: 51%;
+  width: 34%;
+  height: auto;
+  transform: translate(-50%, -50%);
+  opacity: 0.08;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.certificate-trail-pines {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 7.5rem;
+  background:
+    linear-gradient(135deg, transparent 0 36%, rgba(0, 54, 45, 0.86) 36% 46%, transparent 46%) 0 1.8rem / 4rem 6rem repeat-x,
+    linear-gradient(180deg, rgba(0, 48, 39, 0) 0%, rgba(0, 39, 33, 0.78) 62%, rgba(0, 33, 29, 0.95) 100%);
+  z-index: 0;
+}
+
+.certificate-trail-cajamarca-logo {
+  position: absolute;
+  right: 1.6rem;
+  top: 1.35rem;
+  width: 5.7rem;
+  height: auto;
+  opacity: 0.94;
+  filter: drop-shadow(0 8px 14px rgba(0,0,0,0.26));
+  z-index: 2;
+}
+
+.certificate-preview-trail .certificate-race {
+  margin-top: 0;
+  border: 1px solid rgba(255,255,255,0.28);
+  background: rgba(0, 40, 36, 0.28);
+}
+
+.certificate-preview-trail .certificate-title {
+  margin-top: 2.1rem;
+  font-size: clamp(2rem, 4.4vw, 3rem);
+}
+
+.certificate-preview-trail .certificate-copy,
+.certificate-preview-trail .certificate-name {
+  font-family: Georgia, "Times New Roman", serif;
+}
+
+.certificate-preview-trail .certificate-name {
+  text-transform: none;
+}
+
+.certificate-preview-trail .certificate-copy-strong strong,
+.certificate-preview-trail .certificate-secondary-meta strong {
+  color: #ffd36a;
+}
+
+.certificate-preview-trail .certificate-metric {
+  border-radius: 7px;
+  background: rgba(0, 36, 32, 0.36);
+  border-color: rgba(255,255,255,0.2);
+}
+
 .certificate-preview::before {
   content: "";
   position: absolute;
@@ -3855,7 +3997,8 @@ button:disabled {
 .certificate-copy,
 .certificate-name,
 .certificate-grid,
-.certificate-secondary-meta {
+.certificate-secondary-meta,
+.certificate-footer-meta {
   position: relative;
   z-index: 1;
 }

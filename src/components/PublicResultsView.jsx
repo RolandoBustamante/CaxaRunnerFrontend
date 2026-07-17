@@ -25,17 +25,27 @@ function ImageDownloadIcon() {
 
 function CertificatePreview({ race, certificate }) {
   const isNoTimeCertificate = Boolean(certificate?.noTime);
+  const isTrail = race?.certificateTemplate === "trail";
+  const timeValue = isNoTimeCertificate ? "ST" : formatCertificateTime(certificate.timeMs);
   return (
     <div className="certificate-preview-shell">
-      <div className="certificate-preview">
-        <div className="certificate-watermark">
+      <div className={`certificate-preview ${isTrail ? "certificate-preview-trail" : ""}`}>
+        {isTrail && (
+          <>
+            <div className="certificate-trail-lines" />
+            <img className="certificate-trail-watermark" src="/granja-porcon-trail-logo.png" alt="" />
+            <div className="certificate-trail-pines" />
+          </>
+        )}
+        <div className={`certificate-watermark ${isTrail ? "certificate-watermark-hidden" : ""}`}>
           <img src="/Cajamarcar Runners Logo sin fondo-01.png" alt="" />
         </div>
         <div className="certificate-header">
           <div>
-            <img className="certificate-logo" src="/crlogo-horizontal.svg" alt="Cajamarca Runners" />
+            {!isTrail && <img className="certificate-logo" src="/crlogo-horizontal.svg" alt="Cajamarca Runners" />}
             <div className="certificate-race">{race?.name}</div>
           </div>
+          {isTrail && <img className="certificate-trail-cajamarca-logo" src="/cajamarca-runners-white-logo.png" alt="Cajamarca Runners" />}
           <div className="certificate-seal">
             <div className="certificate-seal-title">Certificado de Finisher</div>
             <div className="certificate-seal-sub">Comité organizador</div>
@@ -51,8 +61,8 @@ function CertificatePreview({ race, certificate }) {
         </p>
         <div className="certificate-grid">
           <div className="certificate-metric">
-            <div className="certificate-metric-value">{formatCertificateTime(certificate.timeMs)}</div>
-            <div className="certificate-metric-label">Tiempo oficial</div>
+            <div className="certificate-metric-value">{timeValue}</div>
+            <div className="certificate-metric-label">{isNoTimeCertificate ? "Estado" : "Tiempo oficial"}</div>
           </div>
           <div className="certificate-metric">
             <div className="certificate-metric-value">{certificate.position}</div>

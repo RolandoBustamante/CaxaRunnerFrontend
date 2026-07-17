@@ -23,7 +23,10 @@ async function request(method, path, body) {
     throw new Error("Sesion expirada");
   }
 
-  const data = await res.json();
+  const contentType = res.headers.get("content-type") || "";
+  const data = contentType.includes("application/json")
+    ? await res.json()
+    : { error: await res.text() };
   if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
   return data;
 }
@@ -130,6 +133,8 @@ export const api = {
   uploadParticipantDorsals: (assignments, raceId) =>
     request("POST", "/participants/dorsals", { assignments, raceId }),
   searchParticipant: (q, raceId) => request("GET", withRaceId(`/participants/search?q=${encodeURIComponent(q)}`, raceId)),
+  updateParticipant: (id, payload, raceId) =>
+    request("PUT", `/participants/${idToPath(id)}`, { ...payload, raceId }),
   assignDorsal: (id, dorsal, raceId) => request("POST", `/participants/${id}/dorsal`, { dorsal, raceId }),
   toggleKit: (id, raceId) => request("POST", `/participants/${id}/kit`, raceId == null ? undefined : { raceId }),
   toggleCarta: (id, raceId) => request("POST", `/participants/${id}/carta`, raceId == null ? undefined : { raceId }),

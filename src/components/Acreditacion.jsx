@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { api } from "../api";
 import { getCategory, DEFAULT_CATEGORIES } from "../utils/categories";
 
@@ -9,6 +9,26 @@ function extractReniecName(data) {
 }
 
 const EMPTY_FORM = { documento: "", nombre: "", edad: "", genero: "M", distancia: "10K", dorsal: "" };
+
+function participantToEditForm(participant) {
+  return {
+    documento: String(participant?.documento || ""),
+    nombre: String(participant?.nombre || ""),
+    edad: String(participant?.edad || ""),
+    genero: String(participant?.genero || "M").toUpperCase(),
+    distancia: String(participant?.distancia || "10K").toUpperCase(),
+    dorsal: String(participant?.dorsal || ""),
+  };
+}
+
+function validateEditForm(form) {
+  if (!form.documento.trim()) return "Ingresa el documento.";
+  if (!form.nombre.trim()) return "Ingresa el nombre.";
+  if (!form.edad || isNaN(Number(form.edad)) || Number(form.edad) <= 0) return "Ingresa una edad valida.";
+  if (!["M", "F"].includes(String(form.genero).trim().toUpperCase())) return "Selecciona genero M o F.";
+  if (!form.distancia.trim()) return "Selecciona la distancia.";
+  return "";
+}
 
 // ── Debounce hook ─────────────────────────────────────────────────────────
 function useDebounce(value, delay) {
@@ -21,7 +41,7 @@ function useDebounce(value, delay) {
 }
 
 // ── Search result card ────────────────────────────────────────────────────
-function ParticipantCard({ participant, onUpdate, categories = DEFAULT_CATEGORIES, raceId }) {
+function ParticipantCard({ participant, onUpdate, onEdit, categories = DEFAULT_CATEGORIES, raceId }) {
   const [dorsalInput, setDorsalInput] = useState("");
   const [assigning, setAssigning] = useState(false);
   const [assignError, setAssignError] = useState("");
@@ -92,6 +112,9 @@ function ParticipantCard({ participant, onUpdate, categories = DEFAULT_CATEGORIE
             <span className="category-tag">{category}</span>
           </div>
         </div>
+        <button className="btn btn-secondary btn-sm" onClick={() => onEdit?.(p)} disabled={busy}>
+          Editar
+        </button>
 
         {/* Dorsal */}
         <div className="acred-dorsal-section">
@@ -175,6 +198,7 @@ function ParticipantCard({ participant, onUpdate, categories = DEFAULT_CATEGORIE
 // ── Main Acreditacion component ────────────────────────────────────────────
 export default function Acreditacion({ participants, categories = DEFAULT_CATEGORIES, onUpdate, raceId }) {
   const [query, setQuery] = useState("");
+  const [dorsalQuery, setDorsalQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [searching, setSearching] = useState(false);
   const [tableFilter, setTableFilter] = useState("todos");
@@ -182,6 +206,10 @@ export default function Acreditacion({ participants, categories = DEFAULT_CATEGO
   const [editingDorsalValue, setEditingDorsalValue] = useState("");
   const [editingDorsalError, setEditingDorsalError] = useState("");
   const [editingDorsalBusy, setEditingDorsalBusy] = useState(false);
+  const [editingParticipantId, setEditingParticipantId] = useState(null);
+  const [editingParticipantForm, setEditingParticipantForm] = useState(EMPTY_FORM);
+  const [editingParticipantError, setEditingParticipantError] = useState("");
+  const [editingParticipantBusy, setEditingParticipantBusy] = useState(false);
   const searchInputRef = useRef(null);
 
   // Manual add form
@@ -192,6 +220,7 @@ export default function Acreditacion({ participants, categories = DEFAULT_CATEGO
   const [dniLookupStatus, setDniLookupStatus] = useState("idle"); // idle | loading | found | not-found | error
 
   const debouncedQuery = useDebounce(query, 300);
+  const debouncedDorsalQuery = useDebounce(dorsalQuery, 150);
 
   // Auto-focus search input on mount
   useEffect(() => {
@@ -230,6 +259,23 @@ export default function Acreditacion({ participants, categories = DEFAULT_CATEGO
       } catch (_) {}
     }
   }, [onUpdate, debouncedQuery, raceId]);
+
+  const dorsalSearchResults = useMemo(() => {
+    const value = debouncedDorsalQuery.trim().toLowerCase();
+    if (!value) return [];
+
+    return participants
+      .filter((p) => String(p.dorsal || "").trim().toLowerCase().includes(value))
+      .sort((a, b) => {
+        const dorsalA = String(a.dorsal || "").trim().toLowerCase();
+        const dorsalB = String(b.dorsal || "").trim().toLowerCase();
+        if (dorsalA === value && dorsalB !== value) return -1;
+        if (dorsalB === value && dorsalA !== value) return 1;
+        if (dorsalA.startsWith(value) && !dorsalB.startsWith(value)) return -1;
+        if (dorsalB.startsWith(value) && !dorsalA.startsWith(value)) return 1;
+        return dorsalA.localeCompare(dorsalB, undefined, { numeric: true });
+      });
+  }, [participants, debouncedDorsalQuery]);
 
   // Lookup DNI from RENIEC and fill nombre
   const lookupDni = useCallback(async (dni) => {
@@ -352,6 +398,46 @@ export default function Acreditacion({ participants, categories = DEFAULT_CATEGO
     }
   };
 
+  const startEditParticipant = (participant) => {
+    setEditingParticipantId(participant.id);
+    setEditingParticipantForm(participantToEditForm(participant));
+    setEditingParticipantError("");
+    cancelEditDorsal();
+  };
+
+  const cancelEditParticipant = () => {
+    setEditingParticipantId(null);
+    setEditingParticipantForm(EMPTY_FORM);
+    setEditingParticipantError("");
+  };
+
+  const commitEditParticipant = async (id) => {
+    const validation = validateEditForm(editingParticipantForm);
+    if (validation) {
+      setEditingParticipantError(validation);
+      return;
+    }
+
+    setEditingParticipantBusy(true);
+    setEditingParticipantError("");
+    try {
+      await api.updateParticipant(id, {
+        documento: editingParticipantForm.documento.trim(),
+        nombre: editingParticipantForm.nombre.trim(),
+        edad: Number(editingParticipantForm.edad),
+        genero: editingParticipantForm.genero,
+        distancia: editingParticipantForm.distancia,
+        dorsal: editingParticipantForm.dorsal.trim() || null,
+      }, raceId);
+      await onUpdate();
+      cancelEditParticipant();
+    } catch (err) {
+      setEditingParticipantError(err.message || "No se pudo actualizar el participante.");
+    } finally {
+      setEditingParticipantBusy(false);
+    }
+  };
+
   return (
     <div className="acred-container">
       {/* ── Section A: Ventanilla ─────────────────────────────────────────── */}
@@ -361,6 +447,7 @@ export default function Acreditacion({ participants, categories = DEFAULT_CATEGO
         </div>
 
         {/* Search input */}
+        <div className="acred-search-row">
         <div className="acred-search-wrapper">
           <input
             ref={searchInputRef}
@@ -368,7 +455,10 @@ export default function Acreditacion({ participants, categories = DEFAULT_CATEGO
             type="text"
             placeholder="Buscar por documento o nombre..."
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(e) => {
+              setQuery(e.target.value);
+              setDorsalQuery("");
+            }}
             autoComplete="off"
           />
           {query && (
@@ -386,6 +476,32 @@ export default function Acreditacion({ participants, categories = DEFAULT_CATEGO
           )}
         </div>
 
+        <div className="acred-search-wrapper">
+          <input
+            className="acred-search-input acred-dorsal-search-input"
+            type="text"
+            inputMode="numeric"
+            placeholder="Buscar solo por dorsal..."
+            value={dorsalQuery}
+            onChange={(e) => {
+              setDorsalQuery(e.target.value);
+              setQuery("");
+              setSearchResults([]);
+            }}
+            autoComplete="off"
+          />
+          {dorsalQuery && (
+            <button
+              className="acred-search-clear"
+              onClick={() => setDorsalQuery("")}
+              aria-label="Limpiar busqueda por dorsal"
+            >
+              x
+            </button>
+          )}
+        </div>
+        </div>
+
         {/* Search results */}
         <div className="acred-search-results">
           {searching && (
@@ -396,11 +512,27 @@ export default function Acreditacion({ participants, categories = DEFAULT_CATEGO
               No se encontró ningún participante para "<strong>{query}</strong>"
             </div>
           )}
+          {!query.trim() && dorsalQuery.trim() && dorsalSearchResults.length === 0 && (
+            <div className="acred-no-results">
+              No se encontro ningun participante con dorsal "<strong>{dorsalQuery}</strong>"
+            </div>
+          )}
           {searchResults.map((p) => (
             <ParticipantCard
               key={p.id}
               participant={p}
               onUpdate={handleUpdate}
+              onEdit={startEditParticipant}
+              categories={categories}
+              raceId={raceId}
+            />
+          ))}
+          {!query.trim() && dorsalSearchResults.map((p) => (
+            <ParticipantCard
+              key={p.id}
+              participant={p}
+              onUpdate={handleUpdate}
+              onEdit={startEditParticipant}
               categories={categories}
               raceId={raceId}
             />
@@ -598,18 +730,77 @@ export default function Acreditacion({ participants, categories = DEFAULT_CATEGO
                   <th>Dorsal</th>
                   <th>Kit</th>
                   <th>Carta</th>
+                  <th>Acciones</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredParticipants.map((p) => {
                   const category = getCategory(p.edad, p.genero, p.distancia, categories);
+                  const isEditingParticipant = false;
                   return (
                     <tr key={p.id}>
-                      <td className="acred-table-doc">{p.documento}</td>
-                      <td className="name-cell">{p.nombre}</td>
-                      <td><span className="category-tag">{category}</span></td>
+                      <td className="acred-table-doc">
+                        {isEditingParticipant ? (
+                          <input
+                            className="acred-add-input acred-table-input"
+                            value={editingParticipantForm.documento}
+                            onChange={(e) => { setEditingParticipantForm((prev) => ({ ...prev, documento: e.target.value })); setEditingParticipantError(""); }}
+                            disabled={editingParticipantBusy}
+                          />
+                        ) : p.documento}
+                      </td>
+                      <td className="name-cell">
+                        {isEditingParticipant ? (
+                          <input
+                            className="acred-add-input acred-table-input acred-table-name-input"
+                            value={editingParticipantForm.nombre}
+                            onChange={(e) => { setEditingParticipantForm((prev) => ({ ...prev, nombre: e.target.value })); setEditingParticipantError(""); }}
+                            disabled={editingParticipantBusy}
+                          />
+                        ) : p.nombre}
+                      </td>
+                      <td>
+                        {isEditingParticipant ? (
+                          <div className="acred-inline-edit-group">
+                            <input
+                              className="acred-add-input acred-table-input acred-inline-age"
+                              type="number"
+                              min="1"
+                              value={editingParticipantForm.edad}
+                              onChange={(e) => { setEditingParticipantForm((prev) => ({ ...prev, edad: e.target.value })); setEditingParticipantError(""); }}
+                              disabled={editingParticipantBusy}
+                            />
+                            <select
+                              className="acred-add-input acred-table-input acred-inline-select"
+                              value={editingParticipantForm.genero}
+                              onChange={(e) => { setEditingParticipantForm((prev) => ({ ...prev, genero: e.target.value })); setEditingParticipantError(""); }}
+                              disabled={editingParticipantBusy}
+                            >
+                              <option value="M">M</option>
+                              <option value="F">F</option>
+                            </select>
+                            <select
+                              className="acred-add-input acred-table-input acred-inline-select"
+                              value={editingParticipantForm.distancia}
+                              onChange={(e) => { setEditingParticipantForm((prev) => ({ ...prev, distancia: e.target.value })); setEditingParticipantError(""); }}
+                              disabled={editingParticipantBusy}
+                            >
+                              <option value="5K">5K</option>
+                              <option value="10K">10K</option>
+                            </select>
+                          </div>
+                        ) : <span className="category-tag">{category}</span>}
+                      </td>
                       <td className="acred-dorsal-cell">
-                        {editingDorsalId === p.id ? (
+                        {isEditingParticipant ? (
+                          <input
+                            className="acred-add-input acred-table-input"
+                            value={editingParticipantForm.dorsal}
+                            onChange={(e) => { setEditingParticipantForm((prev) => ({ ...prev, dorsal: e.target.value })); setEditingParticipantError(""); }}
+                            disabled={editingParticipantBusy}
+                            placeholder="Dorsal"
+                          />
+                        ) : editingDorsalId === p.id ? (
                           <div className="acred-dorsal-edit">
                             <input
                               className="acred-dorsal-input"
@@ -657,6 +848,19 @@ export default function Acreditacion({ participants, categories = DEFAULT_CATEGO
                           {p.cartaFirmada ? "✓" : "—"}
                         </button>
                       </td>
+                      <td>
+                        {isEditingParticipant ? (
+                          <div className="acred-dorsal-edit">
+                            <button className="acred-dorsal-confirm" onClick={() => commitEditParticipant(p.id)} disabled={editingParticipantBusy} title="Guardar">OK</button>
+                            <button className="acred-dorsal-cancel" onClick={cancelEditParticipant} disabled={editingParticipantBusy} title="Cancelar">X</button>
+                            {editingParticipantError && <span className="acred-dorsal-err">{editingParticipantError}</span>}
+                          </div>
+                        ) : (
+                          <button className="btn btn-secondary btn-sm" onClick={() => startEditParticipant(p)}>
+                            Editar
+                          </button>
+                        )}
+                      </td>
                     </tr>
                   );
                 })}
@@ -665,6 +869,118 @@ export default function Acreditacion({ participants, categories = DEFAULT_CATEGO
           </div>
         )}
       </div>
+
+      {editingParticipantId && (
+        <div className="app-dialog-backdrop" onClick={editingParticipantBusy ? undefined : cancelEditParticipant}>
+          <div className="app-dialog" onClick={(event) => event.stopPropagation()}>
+            <div className="app-dialog-header">
+              <h3>Editar participante</h3>
+              <button
+                type="button"
+                className="app-dialog-close"
+                onClick={cancelEditParticipant}
+                disabled={editingParticipantBusy}
+                aria-label="Cerrar"
+              >
+                X
+              </button>
+            </div>
+            <div className="app-dialog-body">
+              <div className="acred-edit-grid">
+                <label className="acred-add-field">
+                  <span className="acred-add-label">Documento</span>
+                  <input
+                    className="acred-add-input"
+                    value={editingParticipantForm.documento}
+                    onChange={(event) => {
+                      setEditingParticipantForm((prev) => ({ ...prev, documento: event.target.value }));
+                      setEditingParticipantError("");
+                    }}
+                    disabled={editingParticipantBusy}
+                  />
+                </label>
+                <label className="acred-add-field acred-add-field-nombre">
+                  <span className="acred-add-label">Nombre</span>
+                  <input
+                    className="acred-add-input"
+                    value={editingParticipantForm.nombre}
+                    onChange={(event) => {
+                      setEditingParticipantForm((prev) => ({ ...prev, nombre: event.target.value }));
+                      setEditingParticipantError("");
+                    }}
+                    disabled={editingParticipantBusy}
+                  />
+                </label>
+                <label className="acred-add-field acred-add-field-sm">
+                  <span className="acred-add-label">Edad</span>
+                  <input
+                    className="acred-add-input"
+                    type="number"
+                    min="1"
+                    value={editingParticipantForm.edad}
+                    onChange={(event) => {
+                      setEditingParticipantForm((prev) => ({ ...prev, edad: event.target.value }));
+                      setEditingParticipantError("");
+                    }}
+                    disabled={editingParticipantBusy}
+                  />
+                </label>
+                <label className="acred-add-field acred-add-field-sm">
+                  <span className="acred-add-label">Genero</span>
+                  <select
+                    className="acred-add-input"
+                    value={editingParticipantForm.genero}
+                    onChange={(event) => {
+                      setEditingParticipantForm((prev) => ({ ...prev, genero: event.target.value }));
+                      setEditingParticipantError("");
+                    }}
+                    disabled={editingParticipantBusy}
+                  >
+                    <option value="M">M</option>
+                    <option value="F">F</option>
+                  </select>
+                </label>
+                <label className="acred-add-field acred-add-field-sm">
+                  <span className="acred-add-label">Distancia</span>
+                  <select
+                    className="acred-add-input"
+                    value={editingParticipantForm.distancia}
+                    onChange={(event) => {
+                      setEditingParticipantForm((prev) => ({ ...prev, distancia: event.target.value }));
+                      setEditingParticipantError("");
+                    }}
+                    disabled={editingParticipantBusy}
+                  >
+                    <option value="5K">5K</option>
+                    <option value="10K">10K</option>
+                  </select>
+                </label>
+                <label className="acred-add-field acred-add-field-sm">
+                  <span className="acred-add-label">Dorsal</span>
+                  <input
+                    className="acred-add-input"
+                    value={editingParticipantForm.dorsal}
+                    onChange={(event) => {
+                      setEditingParticipantForm((prev) => ({ ...prev, dorsal: event.target.value }));
+                      setEditingParticipantError("");
+                    }}
+                    disabled={editingParticipantBusy}
+                  />
+                </label>
+              </div>
+              {editingParticipantError && <div className="input-error-msg">{editingParticipantError}</div>}
+            </div>
+            <div className="app-dialog-actions">
+              <button className="btn btn-secondary" onClick={cancelEditParticipant} disabled={editingParticipantBusy}>
+                Cancelar
+              </button>
+              <button className="btn btn-primary" onClick={() => commitEditParticipant(editingParticipantId)} disabled={editingParticipantBusy}>
+                {editingParticipantBusy ? "Guardando..." : "Guardar cambios"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
