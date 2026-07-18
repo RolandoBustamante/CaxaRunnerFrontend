@@ -501,6 +501,7 @@ button:disabled {
    ========================================================= */
 .table-wrapper {
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
   border-radius: var(--radius-md);
   border: 1px solid var(--border);
 }
@@ -2397,6 +2398,7 @@ button:disabled {
     gap: 0.5rem;
     min-height: 0;
     flex-wrap: wrap;
+    align-items: flex-start;
   }
 
   .navbar-brand { gap: 0.35rem; }
@@ -2406,6 +2408,7 @@ button:disabled {
     width: 100%;
     justify-content: space-between;
     flex-wrap: wrap;
+    gap: 0.5rem;
   }
 
   .navbar-status .status-text { display: none; }
@@ -2420,13 +2423,16 @@ button:disabled {
     position: static;
   }
   .app-sidebar-card {
-    padding: 0.65rem;
+    padding: 0.55rem;
+    border-radius: var(--radius-md);
   }
+  .app-sidebar-label { display: none; }
   .tab-nav-vertical {
     flex-direction: row;
     overflow-x: auto;
     padding-bottom: 0.2rem;
     scrollbar-width: thin;
+    scroll-snap-type: x proximity;
   }
   .tab-nav-vertical .tab-btn {
     width: auto;
@@ -2434,13 +2440,27 @@ button:disabled {
     padding: 0.6rem 0.8rem;
     font-size: 0.84rem;
     border-radius: 999px;
+    scroll-snap-align: start;
   }
   .tab-nav-vertical .tab-btn-label {
     overflow: visible;
   }
 
   /* Tables → scroll horizontal */
-  .table-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .table-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    margin-inline: -0.25rem;
+    border-radius: var(--radius-sm);
+  }
+  .data-table {
+    min-width: 680px;
+    font-size: 0.84rem;
+  }
+  .data-table th,
+  .data-table td {
+    padding: 0.55rem 0.65rem;
+  }
 
   /* Cronómetro */
   .race-clock { font-size: 3.8rem; }
@@ -2457,12 +2477,33 @@ button:disabled {
   .finisher-category { display: none; }
 
   /* Acreditación — cards apiladas */
-  .acred-card-identity { flex-direction: column; gap: 0.75rem; }
-  .acred-dorsal-section { align-self: flex-start; }
+  .acred-card {
+    padding: 0.9rem;
+  }
+  .acred-card-identity {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0.75rem;
+  }
+  .acred-dorsal-section {
+    grid-column: 1 / -1;
+    align-self: stretch;
+  }
+  .acred-dorsal-assigned,
+  .acred-no-dorsal {
+    align-items: flex-start;
+  }
 
   /* Resultados */
   .results-toolbar { flex-direction: column; align-items: stretch; gap: 0.5rem; }
-  .results-actions { justify-content: flex-end; }
+  .results-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.5rem;
+  }
+  .results-actions .btn {
+    justify-content: center;
+  }
 
   /* Podio */
   .podium-row { gap: 0.5rem; }
@@ -2492,19 +2533,31 @@ button:disabled {
 @media (max-width: 480px) {
 
   /* Navbar: logo compacto en móvil */
+  .navbar {
+    padding-inline: max(0.6rem, env(safe-area-inset-left)) max(0.6rem, env(safe-area-inset-right));
+  }
+  .navbar-brand {
+    max-width: calc(100vw - 5.8rem);
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
   .brand-logo { height: 1.4rem; }
   .navbar-race-pill {
     width: 100%;
     justify-content: center;
   }
   .tab-nav-vertical .tab-btn {
-    padding: 0.5rem 0.7rem;
+    padding: 0.55rem 0.75rem;
     font-size: 0.78rem;
+    min-height: 40px;
   }
   .tab-badge { min-width: 16px; height: 16px; font-size: 0.65rem; }
 
   /* Main */
-  .main-content { padding: 0.5rem; }
+  .main-content {
+    padding: 0.5rem;
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
 
   /* Cronómetro más compacto */
   .race-clock { font-size: 3rem; }
@@ -2560,10 +2613,40 @@ button:disabled {
   .podium-position { font-size: 1.1rem; }
 
   /* Acreditación — búsqueda full width */
-  .acred-search-row { grid-template-columns: 1fr; }
-  .acred-search-input { font-size: 1rem; }
+  .acred-search-row {
+    grid-template-columns: minmax(0, 1fr) minmax(104px, 0.42fr);
+    gap: 0.45rem;
+  }
+  .acred-search-input {
+    min-height: 46px;
+    padding: 0.7rem 2.35rem 0.7rem 0.75rem;
+    font-size: 0.95rem;
+  }
+  .acred-dorsal-search-input {
+    padding-left: 0.65rem;
+  }
   .acred-container { gap: 1rem; }
-  .acred-section { padding: 0.75rem; }
+  .acred-section { padding: 0; }
+  .acred-card-identity {
+    grid-template-columns: 1fr;
+  }
+  .acred-card-identity > .btn {
+    width: 100%;
+    justify-content: center;
+  }
+  .acred-dorsal-assign {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    width: 100%;
+  }
+  .acred-dorsal-input {
+    width: 100%;
+    min-height: 42px;
+  }
+  .acred-toggles {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 
   /* Stats en 2 columnas */
   .acred-stat-num { font-size: 1.4rem; }
@@ -2575,6 +2658,7 @@ button:disabled {
   /* Tabla acreditación: ocultar documento en lista (visible en card) */
   .acred-table th:first-child,
   .acred-table td:first-child { display: none; }
+  .acred-table { min-width: 560px; }
 
   /* Format guide tabla compacta */
   .sample-table th,
@@ -4206,19 +4290,19 @@ button:disabled {
 @media (max-width: 768px) {
   .certificate-dialog {
     width: min(100%, 680px);
+    max-height: 94vh;
+  }
+
+  .certificate-preview-shell {
+    justify-content: flex-start;
+    padding-bottom: 0.25rem;
   }
 
   .certificate-preview {
     transform: scale(0.72);
+    transform-origin: top left;
     margin-bottom: -8.5rem;
-  }
-
-  .certificate-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .certificate-header {
-    flex-direction: column;
+    min-width: 860px;
   }
 
   .certificate-footer-meta {
@@ -4228,9 +4312,9 @@ button:disabled {
 
 @media (max-width: 540px) {
   .certificate-preview {
-    transform: none;
-    width: 100%;
-    margin-bottom: 0;
+    transform: scale(0.48);
+    width: 860px;
+    margin-bottom: -19.5rem;
   }
 }
 
@@ -4241,5 +4325,220 @@ button:disabled {
 
   .results-search-clear {
     width: 100%;
+  }
+}
+
+/* =========================================================
+   Responsive polish
+   ========================================================= */
+@media (max-width: 768px) {
+  .section-header {
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.6rem;
+  }
+
+  .section-header h2,
+  .section-title {
+    font-size: 1.15rem;
+  }
+
+  .upload-container,
+  .results-container,
+  .config-container,
+  .users-container {
+    gap: 1rem;
+  }
+
+  .upload-mode-toggle,
+  .view-toggle,
+  .acred-filter-tabs {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+  }
+
+  .upload-mode-toggle .btn,
+  .view-toggle .btn,
+  .acred-filter-tabs .btn {
+    flex: 0 0 auto;
+  }
+
+  .manual-entry-panel,
+  .format-guide,
+  .missed-finisher-panel,
+  .config-preview,
+  .race-selector-card,
+  .config-race-banner,
+  .card {
+    border-radius: var(--radius-md);
+    padding: 1rem;
+  }
+
+  .manual-entry-grid,
+  .acred-add-fields,
+  .config-race-actions,
+  .config-race-info {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
+  }
+
+  .manual-field,
+  .manual-field-nombre,
+  .acred-add-field,
+  .acred-add-field-nombre,
+  .acred-add-field-sm,
+  .config-date-field,
+  .config-distances-field,
+  .config-notice-field {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .manual-input,
+  .manual-input-short,
+  .acred-add-input,
+  .config-input,
+  .login-input,
+  .missed-input {
+    width: 100%;
+    min-height: 42px;
+  }
+
+  .users-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .users-table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    white-space: nowrap;
+  }
+
+  .public-view {
+    padding: 1rem 0.75rem;
+  }
+
+  .public-results-panel {
+    max-width: 100%;
+  }
+
+  .public-results-table {
+    min-width: 560px;
+  }
+
+  .public-clock,
+  .crono-clock,
+  .race-clock {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+}
+
+@media (max-width: 540px) {
+  .btn {
+    min-height: 42px;
+    justify-content: center;
+  }
+
+  .section-header {
+    flex-direction: column;
+  }
+
+  .section-header .badge {
+    align-self: flex-start;
+  }
+
+  .drop-zone {
+    padding: 1.2rem 0.9rem;
+  }
+
+  .drop-icon {
+    font-size: 1.6rem;
+    margin-bottom: 0.35rem;
+  }
+
+  .drop-title {
+    font-size: 0.98rem;
+  }
+
+  .manual-entry-grid,
+  .acred-add-fields,
+  .config-race-actions,
+  .config-race-info {
+    grid-template-columns: 1fr;
+  }
+
+  .manual-entry-panel,
+  .format-guide,
+  .missed-finisher-panel,
+  .config-preview,
+  .race-selector-card,
+  .config-race-banner,
+  .card {
+    padding: 0.85rem;
+  }
+
+  .results-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .race-selector-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .race-option {
+    padding: 0.8rem;
+  }
+
+  .config-actions,
+  .app-dialog-actions,
+  .acred-add-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .config-actions .btn,
+  .app-dialog-actions .btn,
+  .acred-add-actions .btn {
+    width: 100%;
+  }
+
+  .app-dialog-backdrop {
+    align-items: flex-end;
+    padding: 0.5rem;
+  }
+
+  .app-dialog {
+    width: 100%;
+    max-height: calc(100vh - 1rem);
+    overflow: auto;
+    border-radius: var(--radius-lg) var(--radius-lg) var(--radius-sm) var(--radius-sm);
+  }
+
+  .public-logo {
+    max-width: min(78vw, 280px);
+  }
+
+  .public-race-name {
+    font-size: 1.1rem;
+  }
+
+  .public-results-note {
+    font-size: 0.86rem;
+  }
+
+  .public-pdf-btn {
+    min-height: 38px;
+  }
+
+  .theme-toggle {
+    width: 2.35rem;
+    height: 2.35rem;
+    right: max(0.75rem, env(safe-area-inset-right));
+    bottom: max(0.75rem, env(safe-area-inset-bottom));
   }
 }
