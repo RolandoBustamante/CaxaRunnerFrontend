@@ -53,11 +53,11 @@ function CertificatePreview({ race, certificate }) {
         </div>
         <div className="certificate-title">CERTIFICADO</div>
         <p className="certificate-copy">
-          {isNoTimeCertificate ? "El comite organizador certifica una llegada validada sin tiempo oficial." : "El comite organizador certifica que el corredor(a) concluyo oficialmente la prueba."}
+          {isNoTimeCertificate ? "El comité organizador certifica una llegada validada sin tiempo oficial." : "El comité organizador certifica que el corredor(a) concluyó oficialmente la prueba."}
         </p>
         <div className="certificate-name">{certificate.name}</div>
         <p className="certificate-copy certificate-copy-strong">
-          {isNoTimeCertificate ? (<>Se certifica la llegada validada a la distancia de <strong>{certificate.distance}</strong>, con registro confirmado <strong>sin tiempo oficial</strong>.</>) : (<>Concluyo oficialmente la distancia de <strong>{certificate.distance}</strong>, ocupando el puesto <strong>{certificate.position}</strong> en la clasificacion general de su distancia, con un tiempo oficial de <strong>{formatCertificateTime(certificate.timeMs)}</strong>.</>)}
+          {isNoTimeCertificate ? (<>Se certifica la llegada validada a la distancia de <strong>{certificate.distance}</strong>, con registro confirmado <strong>sin tiempo oficial</strong>.</>) : (<>Concluyó oficialmente la distancia de <strong>{certificate.distance}</strong>, ocupando el puesto <strong>{certificate.position}</strong> en la clasificación general de su distancia, con un tiempo oficial de <strong>{formatCertificateTime(certificate.timeMs)}</strong>.</>)}
         </p>
         <div className="certificate-grid">
           <div className="certificate-metric">
@@ -80,7 +80,7 @@ function CertificatePreview({ race, certificate }) {
         </div>
         <div className="certificate-footer-meta">
           <span><strong>Fecha del evento:</strong> {race?.eventDate ? formatRaceDate(race.eventDate) : "-"}</span>
-          <span><strong>Codigo:</strong> {certificate.certificateCode}</span>
+          <span><strong>Código:</strong> {certificate.certificateCode}</span>
         </div>
       </div>
     </div>
@@ -253,7 +253,7 @@ export default function PublicResultsView() {
         <div className="public-results-panel">
           {certificatesEnabled && (
             <div className="public-results-note">
-              Usa el boton Ver para validar tu documento, ver el certificado y luego descargarlo en PDF o imagen.
+              Usa el botón Ver para validar tu documento, ver el certificado y luego descargarlo en PDF o imagen.
             </div>
           )}
 
