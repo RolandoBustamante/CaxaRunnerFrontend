@@ -2,6 +2,7 @@ import { useState, useRef, useCallback } from "react";
 import * as XLSX from "xlsx";
 import { api } from "../api";
 import { getCategory, DEFAULT_CATEGORIES } from "../utils/categories";
+import { confirmDialog, errorDialog } from "../utils/dialog";
 
 function extractReniecName(data) {
   if (!data) return null;
@@ -68,6 +69,7 @@ export default function ParticipantUpload({
   categories = DEFAULT_CATEGORIES,
   onParticipantsLoad,
   onParticipantDorsalsLoad,
+  onParticipantDelete,
 }) {
   const [mode, setMode] = useState("excel");
   const [isDragging, setIsDragging] = useState(false);
@@ -81,6 +83,7 @@ export default function ParticipantUpload({
   const [dorsalUploadResult, setDorsalUploadResult] = useState(null);
   const [excelBusy, setExcelBusy] = useState(false);
   const [excelSuccess, setExcelSuccess] = useState("");
+  const [deletingParticipantId, setDeletingParticipantId] = useState(null);
   const fileInputRef = useRef(null);
 
   const resetExcelState = useCallback(() => {
@@ -287,6 +290,28 @@ export default function ParticipantUpload({
       setFormBusy(false);
     }
   }, [form, onParticipantsLoad]);
+
+  const handleDeleteParticipant = useCallback(async (participant) => {
+    if (!onParticipantDelete) return;
+    const ok = await confirmDialog({
+      title: "Eliminar participante",
+      text: `Se eliminara a ${participant.nombre}. Si tiene dorsal y resultado asociado, tambien se eliminara ese resultado de prueba.`,
+      confirmText: "Eliminar",
+    });
+    if (!ok) return;
+
+    setDeletingParticipantId(participant.id);
+    try {
+      await onParticipantDelete(participant.id);
+    } catch (err) {
+      await errorDialog({
+        title: "No se pudo eliminar",
+        text: err.message || "Ocurrio un error al eliminar el participante.",
+      });
+    } finally {
+      setDeletingParticipantId(null);
+    }
+  }, [onParticipantDelete]);
 
   const excelTitle = mode === "dorsales" ? "Actualizar dorsales" : "Cargar participantes";
   const loadedCount = mode === "dorsales" ? dorsalUploadResult?.updatedCount ?? 0 : participants.length;
@@ -562,6 +587,7 @@ export default function ParticipantUpload({
                   <th>Categoria</th>
                   <th>Genero</th>
                   <th>Distancia</th>
+                  <th>Acciones</th>
                 </tr>
               </thead>
               <tbody>
@@ -589,11 +615,20 @@ export default function ParticipantUpload({
                       <span className={`gender-badge gender-${participant.genero?.toLowerCase()}`}>{participant.genero}</span>
                     </td>
                     <td><span className="category-tag">{participant.distancia}</span></td>
+                    <td>
+                      <button
+                        className="btn btn-danger btn-sm"
+                        onClick={() => handleDeleteParticipant(participant)}
+                        disabled={deletingParticipantId === participant.id}
+                      >
+                        {deletingParticipantId === participant.id ? "Eliminando..." : "Eliminar"}
+                      </button>
+                    </td>
                   </tr>
                 ))}
                 {participants.length > 50 && (
                   <tr>
-                    <td colSpan={7} className="text-muted text-center">
+                    <td colSpan={8} className="text-muted text-center">
                       ... y {participants.length - 50} mas
                     </td>
                   </tr>

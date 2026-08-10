@@ -19,21 +19,21 @@
 }
 
 [data-theme="light"] {
-  --bg-base: #f1f5f9;
+  --bg-base: #f9f9ff;
   --bg-surface: #ffffff;
-  --bg-card: #f8fafc;
-  --bg-hover: #e2e8f0;
-  --bg-input: #f8fafc;
+  --bg-card: #f0f3ff;
+  --bg-hover: #e7eeff;
+  --bg-input: #ffffff;
 
-  --text-primary: #0f172a;
-  --text-secondary: #475569;
-  --text-muted: #94a3b8;
+  --text-primary: #111c2c;
+  --text-secondary: #444651;
+  --text-muted: #747782;
 
-  --border: #cbd5e1;
-  --border-light: #e2e8f0;
+  --border: #c4c6d2;
+  --border-light: #d8e3fa;
 
-  --shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08);
+  --shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  --shadow-sm: 0 2px 10px rgba(0, 0, 0, 0.04);
 
   color-scheme: light;
 }
@@ -58,9 +58,9 @@
   --border: #334155;
   --border-light: #475569;
 
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 16px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
 
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   font-synthesis: none;
@@ -2265,6 +2265,13 @@ button:disabled {
   color: var(--text-secondary);
 }
 
+.acred-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
 /* Inline dorsal editing in table */
 .acred-dorsal-cell {
   min-width: 110px;
@@ -3706,6 +3713,13 @@ button:disabled {
   font-weight: 700;
 }
 
+.config-field-help {
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1.35;
+}
+
 .config-distances-field {
   min-width: min(100%, 260px);
 }
@@ -4540,5 +4554,1915 @@ button:disabled {
     height: 2.35rem;
     right: max(0.75rem, env(safe-area-inset-right));
     bottom: max(0.75rem, env(safe-area-inset-bottom));
+  }
+}
+
+/* =========================================================
+   Front polish pass
+   ========================================================= */
+.navbar {
+  min-width: 0;
+}
+
+.navbar-brand,
+.navbar-race-pill,
+.navbar-right {
+  min-width: 0;
+}
+
+.navbar-race-pill {
+  max-width: min(42vw, 520px);
+  overflow: hidden;
+}
+
+.navbar-race-pill-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.results-toolbar,
+.results-actions,
+.missed-finisher-form,
+.acred-search-row {
+  min-width: 0;
+}
+
+.results-actions .btn {
+  min-height: 2.45rem;
+}
+
+.table-wrapper {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--bg-surface);
+}
+
+.table-wrapper .data-table,
+.table-wrapper .sample-table {
+  margin: 0;
+}
+
+.app-dialog {
+  margin-inline: auto;
+}
+
+@media (max-width: 980px) {
+  .navbar {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+  }
+
+  .navbar-race-pill {
+    justify-self: center;
+    max-width: 100%;
+  }
+
+  .app-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .app-sidebar {
+    position: sticky;
+    top: 68px;
+    z-index: 80;
+  }
+
+  .app-sidebar-card {
+    padding: 0.55rem;
+    border-radius: var(--radius-md);
+  }
+
+  .app-sidebar-label {
+    display: none;
+  }
+
+  .tab-nav-vertical {
+    flex-direction: row;
+    gap: 0.45rem;
+    overflow-x: auto;
+    padding-bottom: 0.15rem;
+    scroll-snap-type: x proximity;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .tab-nav-vertical .tab-btn {
+    width: auto;
+    flex: 0 0 auto;
+    min-width: 8.5rem;
+    justify-content: center;
+    border-radius: 999px;
+    scroll-snap-align: start;
+  }
+
+  .tab-nav-vertical .tab-btn-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .results-toolbar {
+    align-items: stretch;
+  }
+
+  .results-actions {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    width: 100%;
+  }
+
+  .results-actions .btn {
+    justify-content: center;
+    min-width: 0;
+    white-space: normal;
+    text-align: center;
+    line-height: 1.15;
+  }
+}
+
+@media (max-width: 720px) {
+  .navbar {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0.55rem;
+    align-items: center;
+  }
+
+  .navbar-race-pill {
+    grid-column: 1 / -1;
+    order: 3;
+    justify-self: stretch;
+    justify-content: center;
+    width: 100%;
+    max-width: none;
+    border-radius: var(--radius-md);
+    padding: 0.42rem 0.65rem;
+  }
+
+  .navbar-right {
+    width: auto;
+    justify-content: flex-end;
+  }
+
+  .navbar-status {
+    display: none;
+  }
+
+  .main-content {
+    padding: 0.75rem;
+  }
+
+  .race-selector-grid {
+    display: flex;
+    overflow-x: auto;
+    gap: 0.65rem;
+    padding-bottom: 0.15rem;
+    scroll-snap-type: x proximity;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .race-option {
+    flex: 0 0 min(78vw, 300px);
+    scroll-snap-align: start;
+  }
+
+  .results-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .acred-search-row {
+    grid-template-columns: minmax(0, 1.25fr) minmax(7.5rem, 0.75fr);
+  }
+
+  .acred-search-input {
+    min-width: 0;
+  }
+
+  .missed-finisher-form {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: end;
+  }
+
+  .missed-finisher-form .config-checkbox-field,
+  .missed-finisher-form .drop-hint {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 520px) {
+  .navbar {
+    padding: 0.55rem max(0.65rem, env(safe-area-inset-right)) 0.6rem max(0.65rem, env(safe-area-inset-left));
+  }
+
+  .brand-logo {
+    height: 1.35rem;
+    max-width: 11.5rem;
+  }
+
+  .navbar-user-trigger {
+    padding-inline: 0.7rem;
+  }
+
+  .navbar-user-trigger-name {
+    max-width: 6.8rem;
+  }
+
+  .app-sidebar {
+    top: 104px;
+  }
+
+  .app-sidebar-card {
+    margin-inline: -0.15rem;
+    border-radius: var(--radius-sm);
+  }
+
+  .tab-nav-vertical .tab-btn {
+    min-width: 7.5rem;
+    min-height: 42px;
+    padding: 0.55rem 0.7rem;
+  }
+
+  .race-selector-card {
+    padding: 0.8rem;
+  }
+
+  .race-selector-header {
+    gap: 0.65rem;
+  }
+
+  .results-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .results-actions .btn,
+  .results-search-clear {
+    width: 100%;
+  }
+
+  .results-searchbar {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .acred-search-row {
+    grid-template-columns: minmax(0, 1fr) minmax(6.5rem, 0.48fr);
+    gap: 0.45rem;
+  }
+
+  .acred-search-input {
+    font-size: 0.9rem;
+    padding-left: 0.65rem;
+    padding-right: 2.05rem;
+  }
+
+  .acred-search-clear {
+    right: 0.35rem;
+  }
+
+  .missed-finisher-form {
+    grid-template-columns: 1fr;
+  }
+
+  .missed-field,
+  .missed-input,
+  .missed-btn {
+    width: 100%;
+  }
+
+  .app-dialog {
+    width: 100%;
+    max-height: calc(100vh - 1rem);
+    overflow: auto;
+  }
+}
+
+/* =========================================================
+   Corporate design system adoption
+   ========================================================= */
+[data-theme="light"] {
+  --accent-blue: #115cb9;
+}
+
+[data-theme="light"] .navbar {
+  background: #ffffff;
+  border-bottom-color: #c4c6d2;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+}
+
+[data-theme="light"] .btn-primary {
+  background: #001a48;
+  color: #ffffff;
+}
+
+[data-theme="light"] .btn-primary:hover {
+  background: #002d72;
+}
+
+[data-theme="light"] .btn-secondary,
+[data-theme="light"] .btn-tab,
+[data-theme="light"] .navbar-user-trigger,
+[data-theme="light"] .navbar-race-pill,
+[data-theme="light"] .race-option {
+  background: #ffffff;
+  border-color: #c4c6d2;
+}
+
+[data-theme="light"] .btn-secondary:hover,
+[data-theme="light"] .btn-tab:hover,
+[data-theme="light"] .navbar-user-trigger:hover,
+[data-theme="light"] .race-option:hover {
+  background: #f0f3ff;
+  border-color: #acc7ff;
+}
+
+[data-theme="light"] .btn-tab-active,
+[data-theme="light"] .tab-btn-active,
+[data-theme="light"] .race-option-active {
+  background: #d7e2ff;
+  border-color: #115cb9;
+  color: #001a48;
+}
+
+[data-theme="light"] .tab-badge-active {
+  background: #115cb9;
+  color: #ffffff;
+}
+
+[data-theme="light"] .app-sidebar-card,
+[data-theme="light"] .race-selector-card,
+[data-theme="light"] .card,
+[data-theme="light"] .manual-entry-panel,
+[data-theme="light"] .format-guide,
+[data-theme="light"] .missed-finisher-panel,
+[data-theme="light"] .config-race-banner,
+[data-theme="light"] .config-preview,
+[data-theme="light"] .registration-admin-link,
+[data-theme="light"] .registration-admin-card {
+  background: #ffffff;
+  border-color: #c4c6d2;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+}
+
+[data-theme="light"] .login-input,
+[data-theme="light"] .manual-input,
+[data-theme="light"] .config-input,
+[data-theme="light"] .missed-input,
+[data-theme="light"] .acred-search-input,
+[data-theme="light"] .acred-add-input,
+[data-theme="light"] .results-search-input {
+  background: #ffffff;
+  border-color: #c4c6d2;
+  color: #111c2c;
+  min-height: 2.75rem;
+}
+
+[data-theme="light"] .login-input:focus,
+[data-theme="light"] .manual-input:focus,
+[data-theme="light"] .config-input:focus,
+[data-theme="light"] .missed-input:focus,
+[data-theme="light"] .acred-search-input:focus,
+[data-theme="light"] .acred-add-input:focus,
+[data-theme="light"] .results-search-input:focus {
+  border-color: #115cb9;
+  box-shadow: 0 0 0 3px rgba(17, 92, 185, 0.14);
+}
+
+[data-theme="light"] .section-header h2,
+[data-theme="light"] .section-title,
+[data-theme="light"] .config-race-info strong {
+  color: #001a48;
+}
+
+[data-theme="light"] .table-wrapper {
+  background: #ffffff;
+  border-color: #c4c6d2;
+}
+
+[data-theme="light"] .data-table thead {
+  background: #e7eeff;
+}
+
+[data-theme="light"] .data-table tbody tr:hover {
+  background: #f0f3ff;
+}
+
+[data-theme="light"] .navbar-race-pill-status,
+[data-theme="light"] .config-race-state-official {
+  background: #d7e2ff;
+  color: #001a48;
+}
+
+/* =========================================================
+   Registration form
+   ========================================================= */
+.registration-public-page {
+  min-height: 100vh;
+  padding: clamp(1rem, 3vw, 2rem);
+  background: #f9f9ff;
+  color: #111c2c;
+  font-family: "Hanken Grotesk", Inter, system-ui, -apple-system, sans-serif;
+}
+
+.registration-hero,
+.registration-form,
+.registration-success,
+.registration-error-card,
+.registration-loading {
+  width: min(1120px, 100%);
+  margin-inline: auto;
+}
+
+.registration-hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  min-height: 160px;
+  padding: clamp(0.5rem, 2vw, 1.25rem) 0 1.5rem;
+  border-bottom: 1px solid #c4c6d2;
+}
+
+.registration-hero-logo {
+  width: min(260px, 54vw);
+  filter: none;
+}
+
+.registration-kicker,
+.registration-panel-label {
+  display: block;
+  color: #115cb9;
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.registration-hero h1 {
+  max-width: 720px;
+  margin-top: 0.35rem;
+  font-size: clamp(2rem, 5vw, 3.4rem);
+  line-height: 1.02;
+  color: #001a48;
+  letter-spacing: 0;
+}
+
+.registration-hero p {
+  margin-top: 0.75rem;
+  color: #444651;
+  font-weight: 600;
+}
+
+.registration-form {
+  display: grid;
+  gap: 1rem;
+}
+
+.registration-panel,
+.registration-success,
+.registration-error-card,
+.registration-loading {
+  border: 1px solid #c4c6d2;
+  background: #ffffff;
+  border-radius: 0.5rem;
+  padding: clamp(1rem, 2vw, 1.35rem);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+}
+
+.registration-payment-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 1rem;
+}
+
+.registration-payment-panel h2 {
+  margin-top: 0.25rem;
+  color: #001a48;
+  font-size: 1.35rem;
+}
+
+.registration-payment-panel p {
+  margin-top: 0.35rem;
+  color: #444651;
+}
+
+.registration-price-list {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.45rem;
+}
+
+.registration-price-list span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.65rem;
+  border: 1px solid #acc7ff;
+  border-radius: 999px;
+  background: #d7e2ff;
+  color: #001a40;
+  font-size: 0.85rem;
+  font-weight: 800;
+}
+
+.registration-price-list strong {
+  color: inherit;
+  font-weight: 900;
+}
+
+.registration-price-list em {
+  padding: 0.18rem 0.45rem;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #1f7c5a;
+  font-size: 0.72rem;
+  font-style: normal;
+  font-weight: 900;
+}
+
+.registration-instructions {
+  grid-column: 1 / -1;
+  white-space: pre-wrap;
+}
+
+.registration-grid {
+  display: grid;
+  gap: 0.85rem;
+  margin-top: 0.85rem;
+}
+
+.registration-grid-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.registration-grid-4 {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.registration-grid label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  color: #111c2c;
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.registration-field-help {
+  color: #747782;
+  font-size: 0.78rem;
+  font-weight: 500;
+  line-height: 1.35;
+}
+
+.registration-grid input,
+.registration-grid select,
+.registration-notes {
+  width: 100%;
+  min-height: 2.85rem;
+  border: 1px solid #c4c6d2;
+  border-radius: 0.25rem;
+  background: #ffffff;
+  color: #111c2c;
+  padding: 0.65rem 0.75rem;
+  font: inherit;
+}
+
+.registration-grid input[type="date"]::-webkit-calendar-picker-indicator {
+  width: 1.4rem;
+  height: 1.4rem;
+  cursor: pointer;
+}
+
+.registration-grid input:focus,
+.registration-grid select:focus,
+.registration-notes:focus {
+  outline: none;
+  border-color: #115cb9;
+  box-shadow: 0 0 0 3px rgba(17, 92, 185, 0.14);
+}
+
+.registration-section-title,
+.registration-runner-head,
+.registration-admin-head,
+.registration-admin-actions,
+.registration-admin-vouchers {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.registration-type-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem;
+  margin-top: 0.85rem;
+}
+
+.registration-type-option {
+  display: grid;
+  gap: 0.25rem;
+  min-height: 5.25rem;
+  padding: 1rem;
+  text-align: left;
+  border: 1px solid #c4c6d2;
+  border-radius: 0.5rem;
+  background: #ffffff;
+  color: #111c2c;
+}
+
+.registration-type-option strong {
+  color: #001a48;
+  font-size: 1rem;
+}
+
+.registration-type-option span,
+.registration-payment-note {
+  color: #444651;
+  font-size: 0.9rem;
+}
+
+.registration-type-option-active {
+  border-color: #115cb9;
+  background: #d7e2ff;
+  box-shadow: 0 0 0 3px rgba(17, 92, 185, 0.12);
+}
+
+.registration-add-btn,
+.registration-runner-head button {
+  border: 1px solid #acc7ff;
+  border-radius: 0.25rem;
+  background: #d7e2ff;
+  color: #001a40;
+  padding: 0.5rem 0.85rem;
+  font-weight: 700;
+}
+
+.registration-runner-card {
+  margin-top: 0.85rem;
+  border: 1px solid #d8e3fa;
+  border-radius: 0.5rem;
+  background: #f0f3ff;
+  padding: 1rem;
+}
+
+.registration-runner-card-hidden {
+  display: none;
+}
+
+.registration-runner-summary-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.6rem;
+  margin-top: 0.85rem;
+}
+
+.registration-runner-summary {
+  display: grid;
+  gap: 0.2rem;
+  min-height: 4rem;
+  padding: 0.75rem;
+  border: 1px solid #c4c6d2;
+  border-radius: 0.5rem;
+  background: #ffffff;
+  color: #111c2c;
+  text-align: left;
+}
+
+.registration-runner-summary strong {
+  color: #001a48;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.registration-runner-summary span {
+  color: #444651;
+  font-size: 0.82rem;
+}
+
+.registration-runner-summary-active {
+  border-color: #115cb9;
+  background: #d7e2ff;
+  box-shadow: 0 0 0 3px rgba(17, 92, 185, 0.1);
+}
+
+.registration-pay-mode {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-top: 0.85rem;
+}
+
+.registration-payment-note {
+  margin-top: 0.85rem;
+}
+
+.registration-kit-benefits {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 1rem;
+  align-items: center;
+  margin-top: 1rem;
+  padding: 1rem;
+  border: 1px solid #c6d8ff;
+  border-radius: 0.75rem;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(241, 246, 255, 0.96)),
+    radial-gradient(circle at top right, rgba(31, 124, 90, 0.12), transparent 36%);
+  box-shadow: 0 14px 32px rgba(0, 26, 72, 0.08);
+}
+
+.registration-kit-eyebrow {
+  display: block;
+  margin-bottom: 0.25rem;
+  color: #1f7c5a;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.registration-kit-benefits strong {
+  display: block;
+  color: #001a48;
+  font-size: 1.05rem;
+}
+
+.registration-kit-benefits p {
+  margin: 0.35rem 0 0;
+  max-width: 46rem;
+  color: #2f3440;
+  line-height: 1.5;
+}
+
+.registration-kit-benefits ul {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  max-width: 23rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.registration-kit-benefits li {
+  padding: 0.45rem 0.65rem;
+  border: 1px solid #bdd4ff;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #001a48;
+  font-size: 0.82rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.registration-pay-mode label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.65rem 0.85rem;
+  border: 1px solid #c4c6d2;
+  border-radius: 0.25rem;
+  background: #f0f3ff;
+  color: #111c2c;
+  font-weight: 700;
+}
+
+.registration-pay-mode input {
+  width: 1.35rem;
+  height: 1.35rem;
+  accent-color: #115cb9;
+}
+
+.registration-voucher-drop {
+  display: flex;
+  margin-top: 0.85rem;
+  min-height: 4.2rem;
+  border: 1px dashed #747782;
+  border-radius: 0.5rem;
+  background: #f0f3ff;
+  color: #002d72;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  text-align: center;
+  font-weight: 800;
+}
+
+.registration-voucher-drop input {
+  display: none;
+}
+
+.registration-photo-drop {
+  margin-top: 1rem;
+  min-height: 3.5rem;
+  background: #ffffff;
+}
+
+.registration-photo-link,
+.payment-photo-link {
+  width: fit-content;
+  margin-top: 0.35rem;
+}
+
+.registration-discount-summary {
+  display: grid;
+  gap: 0.2rem;
+  min-width: min(100%, 16rem);
+  color: #002d72;
+  font-weight: 700;
+}
+
+.registration-discount-box {
+  margin-top: 0.85rem;
+}
+
+.registration-discount-input {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.5rem;
+  margin-top: 0.35rem;
+}
+
+.config-discounts-panel {
+  display: grid;
+  gap: 1rem;
+  margin: 1rem 0;
+  padding: 1rem;
+  border: 1px solid var(--border, #d7dce5);
+  border-radius: 0.5rem;
+  background: var(--surface, #ffffff);
+}
+
+.config-discount-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  align-items: end;
+  gap: 0.75rem;
+}
+
+.config-discount-list {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.config-discount-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  border: 1px solid var(--border, #d7dce5);
+  border-radius: 0.5rem;
+  background: var(--surface-muted, #f6f8fb);
+}
+
+.config-discount-row div {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.config-discount-row span {
+  color: var(--muted, #64748b);
+  font-size: 0.88rem;
+}
+
+.payment-methods-config {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 1rem;
+  width: 100%;
+}
+
+.payment-methods-section {
+  display: grid;
+  gap: 0.75rem;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: rgba(15, 23, 42, 0.18);
+}
+
+.payment-methods-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.payment-methods-head div {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.payment-methods-head span {
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.payment-methods-head small,
+.payment-method-card label span {
+  color: var(--text-muted);
+  font-size: 0.82rem;
+}
+
+.payment-method-card {
+  display: grid;
+  gap: 0.75rem;
+  padding: 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-card);
+}
+
+.payment-method-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  gap: 0.75rem;
+}
+
+.payment-method-grid label {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.payment-qr-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.payment-qr-preview,
+.payment-qr-empty {
+  width: 5.75rem;
+  height: 5.75rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--bg-surface);
+}
+
+.payment-qr-preview {
+  object-fit: contain;
+  padding: 0.25rem;
+}
+
+.payment-qr-empty {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+}
+
+.payment-qr-upload {
+  position: relative;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.2rem;
+  padding: 0.45rem 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  background: var(--bg-surface);
+  cursor: pointer;
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.payment-qr-upload input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.registration-payment-methods {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 1rem;
+  margin-top: 0.35rem;
+}
+
+.registration-payment-method-section {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.registration-payment-method-section h3 {
+  margin: 0;
+  color: #001a48;
+  font-size: 0.95rem;
+}
+
+.registration-payment-method-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+  gap: 0.75rem;
+}
+
+.registration-wallet-grid {
+  grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+}
+
+.registration-payment-method-card {
+  display: grid;
+  gap: 0.3rem;
+  padding: 0.85rem;
+  border: 1px solid #d6e3ff;
+  border-radius: 0.75rem;
+  background: #f8fbff;
+  color: #1f2430;
+}
+
+.registration-payment-method-card strong {
+  color: #001a48;
+}
+
+.registration-payment-method-card span,
+.registration-payment-method-card small {
+  color: #444651;
+  font-size: 0.88rem;
+  overflow-wrap: anywhere;
+}
+
+.registration-wallet-card {
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+  gap: 0.75rem;
+}
+
+.registration-wallet-info {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.registration-payment-qr-link {
+  display: inline-flex;
+  width: fit-content;
+  max-width: 100%;
+  padding: 0.45rem;
+  border: 1px solid #d6e3ff;
+  border-radius: 0.9rem;
+  background: #ffffff;
+}
+
+.registration-payment-qr {
+  width: 11rem;
+  height: 11rem;
+  object-fit: contain;
+  border: 0;
+  border-radius: 0.5rem;
+  background: #fff;
+  image-rendering: auto;
+}
+
+.race-assets-config {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  gap: 1rem;
+  width: 100%;
+}
+
+.race-asset-card {
+  display: grid;
+  gap: 0.75rem;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--bg-card);
+}
+
+.race-asset-card div:first-child {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.race-asset-card span {
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.race-asset-card small {
+  color: var(--text-muted);
+}
+
+.race-asset-link {
+  color: var(--accent-blue);
+  font-size: 0.92rem;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.race-asset-actions {
+  display: flex;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+}
+
+.race-logo-preview {
+  width: 8rem;
+  height: 5rem;
+  object-fit: contain;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-surface);
+  padding: 0.4rem;
+}
+
+.registration-rules-panel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.9rem;
+  flex-wrap: wrap;
+}
+
+.registration-rules-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  color: #1f2430;
+  font-size: 0.94rem;
+  line-height: 1.45;
+  flex: 1 1 18rem;
+}
+
+.registration-rules-check input {
+  width: 1.1rem;
+  height: 1.1rem;
+  margin-top: 0.15rem;
+  accent-color: #115cb9;
+}
+
+.registration-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(0, 12, 32, 0.72);
+}
+
+.registration-rules-dialog {
+  width: min(64rem, 100%);
+  height: min(48rem, 92vh);
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  overflow: hidden;
+  border-radius: 1rem;
+  background: #ffffff;
+  box-shadow: 0 1.5rem 5rem rgba(0, 12, 32, 0.32);
+}
+
+.registration-rules-dialog-head,
+.registration-rules-dialog-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.85rem;
+  padding: 1rem;
+  border-bottom: 1px solid #d6e3ff;
+}
+
+.registration-rules-dialog-head h2 {
+  margin: 0.15rem 0 0;
+  color: #001a48;
+  font-size: 1.1rem;
+}
+
+.registration-rules-dialog-head button {
+  width: 2.3rem;
+  height: 2.3rem;
+  border: 1px solid #d6e3ff;
+  border-radius: 999px;
+  background: #f8fbff;
+  color: #001a48;
+  font-weight: 800;
+}
+
+.registration-rules-dialog iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: #f8fbff;
+}
+
+.registration-rules-dialog-actions {
+  justify-content: flex-end;
+  border-top: 1px solid #d6e3ff;
+  border-bottom: 0;
+}
+
+.registration-photo-reminder-dialog {
+  width: min(30rem, 100%);
+  display: grid;
+  gap: 0.75rem;
+  padding: 1.25rem;
+  border-radius: 1rem;
+  background: #ffffff;
+  box-shadow: 0 1.5rem 5rem rgba(0, 12, 32, 0.32);
+}
+
+.registration-photo-reminder-dialog h2 {
+  margin: 0;
+  color: #001a48;
+  font-size: 1.25rem;
+  line-height: 1.25;
+}
+
+.registration-photo-reminder-dialog p {
+  margin: 0;
+  color: #444651;
+  line-height: 1.5;
+}
+
+@media (max-width: 640px) {
+  .payment-methods-section {
+    padding: 0.85rem;
+  }
+
+  .payment-qr-row {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .payment-qr-preview,
+  .payment-qr-empty,
+  .payment-qr-upload,
+  .payment-qr-row .btn {
+    width: 100%;
+  }
+
+  .registration-wallet-card {
+    grid-template-columns: 1fr;
+  }
+
+  .registration-payment-qr {
+    width: min(100%, 14rem);
+    height: auto;
+    aspect-ratio: 1 / 1;
+  }
+
+  .registration-kit-benefits {
+    grid-template-columns: 1fr;
+    padding: 0.9rem;
+  }
+
+  .registration-kit-benefits ul {
+    justify-content: flex-start;
+    max-width: none;
+  }
+
+  .registration-kit-benefits li {
+    white-space: normal;
+  }
+
+  .race-asset-actions,
+  .registration-rules-panel,
+  .registration-rules-dialog-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .race-asset-actions .btn,
+  .registration-rules-panel .btn,
+  .registration-rules-dialog-actions .btn {
+    width: 100%;
+  }
+
+  .registration-rules-dialog {
+    height: 94vh;
+  }
+}
+
+.whatsapp-settings {
+  display: grid;
+  gap: 1rem;
+}
+
+.whatsapp-panel {
+  display: grid;
+  gap: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--border, #d7dce5);
+  border-radius: 0.5rem;
+  background: var(--surface, #ffffff);
+}
+
+.whatsapp-status-card {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.whatsapp-status-card h3 {
+  margin: 0;
+  color: #001a48;
+}
+
+.whatsapp-status-card p {
+  margin: 0.2rem 0 0;
+  color: var(--muted, #64748b);
+}
+
+.whatsapp-status-dot {
+  width: 0.85rem;
+  height: 0.85rem;
+  border-radius: 999px;
+  background: #dc2626;
+  box-shadow: 0 0 0 4px rgba(220, 38, 38, 0.12);
+}
+
+.whatsapp-status-dot-ok {
+  background: #16a34a;
+  box-shadow: 0 0 0 4px rgba(22, 163, 74, 0.12);
+}
+
+.whatsapp-qr-card {
+  display: grid;
+  place-items: center;
+  min-height: 17rem;
+  border: 1px dashed #b8c7dd;
+  border-radius: 0.5rem;
+  background: #f8fbff;
+}
+
+.whatsapp-actions,
+.whatsapp-test-row {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.whatsapp-test-row .login-input {
+  flex: 1 1 14rem;
+}
+
+@media (max-width: 640px) {
+  .whatsapp-actions,
+  .whatsapp-test-row {
+    display: grid;
+  }
+
+  .whatsapp-test-row .btn,
+  .whatsapp-actions .btn {
+    width: 100%;
+  }
+}
+
+.payment-photo-link {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid #acc7ff;
+  border-radius: 0.25rem;
+  background: #ffffff;
+  color: #002d72;
+  padding: 0.45rem 0.7rem;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.registration-notes {
+  margin-top: 0.85rem;
+  resize: vertical;
+}
+
+.registration-submit {
+  min-height: 3.4rem;
+  border-radius: 0.25rem;
+  background: #001a48;
+  color: #ffffff;
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.registration-error-card {
+  color: #93000a;
+  border-color: #ffdad6;
+  background: #fff7f6;
+}
+
+.registration-success {
+  margin-top: min(12vh, 5rem);
+  text-align: center;
+}
+
+.registration-success img {
+  width: min(300px, 70vw);
+  filter: none;
+}
+
+.registration-success span {
+  display: block;
+  margin-top: 1.25rem;
+  color: #115cb9;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.registration-success h1 {
+  margin-top: 0.5rem;
+  color: #001a48;
+  font-size: clamp(2rem, 7vw, 4rem);
+}
+
+.registrations-admin {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.registration-admin-link,
+.registration-admin-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+}
+
+.registration-admin-link {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.registration-admin-link span {
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.registration-admin-link strong {
+  overflow-wrap: anywhere;
+}
+
+.registration-admin-list {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.registration-status {
+  display: inline-flex;
+  margin-bottom: 0.35rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
+.registration-status-pending { background: rgba(245, 158, 11, 0.14); color: var(--accent-yellow); }
+.registration-status-approved { background: var(--accent-green-dim); color: var(--accent-green); }
+.registration-status-rejected { background: rgba(239, 68, 68, 0.14); color: #fca5a5; }
+
+.registration-admin-head p {
+  color: var(--text-secondary);
+  font-size: 0.88rem;
+}
+
+.registration-admin-total {
+  color: var(--accent-green);
+  font-size: 1.35rem;
+  font-weight: 900;
+}
+
+.registration-admin-participants {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.65rem;
+  margin-top: 0.9rem;
+}
+
+.registration-admin-runner {
+  display: grid;
+  gap: 0.18rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-card);
+  padding: 0.75rem;
+}
+
+.registration-admin-runner span {
+  color: var(--text-secondary);
+  font-size: 0.84rem;
+}
+
+.registration-admin-vouchers,
+.registration-admin-actions {
+  justify-content: flex-start;
+  margin-top: 0.85rem;
+}
+
+.payment-review-page {
+  min-height: 100vh;
+  padding: clamp(1rem, 3vw, 2rem);
+  background: #f9f9ff;
+  color: #111c2c;
+  font-family: "Hanken Grotesk", Inter, system-ui, -apple-system, sans-serif;
+}
+
+.payment-review-card {
+  width: min(1080px, 100%);
+  margin: 0 auto;
+  border: 1px solid #c4c6d2;
+  border-radius: 0.5rem;
+  background: #ffffff;
+  padding: clamp(1rem, 2.4vw, 1.5rem);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+}
+
+.payment-review-header {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 1rem;
+}
+
+.payment-review-header img {
+  width: min(220px, 34vw);
+  filter: none;
+}
+
+.payment-review-header span {
+  color: #115cb9;
+  font-size: 0.76rem;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.payment-review-header h1 {
+  margin-top: 0.25rem;
+  color: #001a48;
+}
+
+.payment-review-header p {
+  color: #444651;
+}
+
+.payment-review-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.8rem;
+  margin-top: 1.2rem;
+}
+
+.payment-review-summary div {
+  display: grid;
+  gap: 0.2rem;
+  border: 1px solid #d8e3fa;
+  border-radius: 0.375rem;
+  background: #f0f3ff;
+  padding: 0.9rem;
+}
+
+.payment-review-summary span,
+.payment-review-summary small {
+  color: #444651;
+}
+
+.payment-review-summary strong {
+  font-size: 1.25rem;
+  color: #001a48;
+}
+
+.payment-review-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(240px, 0.75fr);
+  gap: 1rem;
+  margin-top: 1.2rem;
+}
+
+.payment-review-grid h2 {
+  margin-bottom: 0.65rem;
+  color: #001a48;
+}
+
+.payment-voucher-list {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.payment-voucher-list a {
+  display: block;
+  border: 1px solid #acc7ff;
+  border-radius: 0.25rem;
+  background: #d7e2ff;
+  color: #001a40;
+  padding: 0.75rem;
+  font-weight: 800;
+}
+
+.payment-review-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1rem;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 760px) {
+  .registration-public-page {
+    padding: 0.85rem;
+  }
+
+  .registration-hero {
+    align-items: flex-start;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  .registration-payment-panel,
+  .registration-type-grid,
+  .registration-grid-3,
+  .registration-grid-4 {
+    grid-template-columns: 1fr;
+  }
+
+  .registration-price-list {
+    justify-content: flex-start;
+  }
+
+  .registration-admin-head {
+    align-items: flex-start;
+  }
+
+  .registration-admin-actions .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .payment-review-header,
+  .payment-review-summary,
+  .payment-review-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .payment-review-header img {
+    width: min(260px, 70vw);
+  }
+
+  .payment-review-actions .btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* =========================================================
+   Internal app professional pass
+   ========================================================= */
+[data-theme="light"] body {
+  background:
+    linear-gradient(180deg, #f9f9ff 0%, #f0f3ff 100%);
+}
+
+[data-theme="light"] .main-content {
+  gap: 1.1rem;
+}
+
+[data-theme="light"] .section-header {
+  padding-bottom: 0.35rem;
+  border-bottom: 1px solid #d8e3fa;
+}
+
+[data-theme="light"] .section-header h2 {
+  font-size: clamp(1.2rem, 2vw, 1.55rem);
+  font-weight: 800;
+  letter-spacing: 0;
+}
+
+[data-theme="light"] .app-sidebar-card {
+  padding: 0.65rem;
+}
+
+[data-theme="light"] .tab-btn {
+  min-height: 2.85rem;
+  border-radius: 0.375rem;
+  background: #ffffff;
+  color: #444651;
+}
+
+[data-theme="light"] .tab-btn-active {
+  background: #d7e2ff;
+  color: #001a48;
+  border-color: #115cb9;
+}
+
+[data-theme="light"] .race-selector-card {
+  padding: 0.9rem;
+}
+
+[data-theme="light"] .race-selector-kicker,
+[data-theme="light"] .app-sidebar-label,
+[data-theme="light"] .manual-label,
+[data-theme="light"] .missed-label,
+[data-theme="light"] .config-date-field,
+[data-theme="light"] .config-notice-field,
+[data-theme="light"] .acred-add-label {
+  color: #444651;
+  letter-spacing: 0.06em;
+}
+
+[data-theme="light"] .race-option {
+  border-radius: 0.5rem;
+  padding: 0.85rem;
+}
+
+[data-theme="light"] .race-option-name {
+  color: #001a48;
+}
+
+[data-theme="light"] .upload-mode-toggle,
+[data-theme="light"] .view-toggle,
+[data-theme="light"] .acred-filter-tabs {
+  gap: 0.4rem;
+}
+
+[data-theme="light"] .btn {
+  min-height: 2.55rem;
+  border-radius: 0.25rem;
+}
+
+[data-theme="light"] .btn-tab {
+  min-height: 2.45rem;
+}
+
+[data-theme="light"] .drop-zone {
+  border: 1px dashed #747782;
+  border-radius: 0.5rem;
+  background: #ffffff;
+  color: #111c2c;
+}
+
+[data-theme="light"] .drop-zone:hover,
+[data-theme="light"] .drop-zone:focus,
+[data-theme="light"] .drop-zone.drag-over {
+  border-color: #115cb9;
+  background: #f0f3ff;
+  box-shadow: 0 0 0 3px rgba(17, 92, 185, 0.12);
+}
+
+[data-theme="light"] .drop-zone-loaded {
+  border-color: #115cb9;
+  background: #d7e2ff;
+}
+
+[data-theme="light"] .drop-title,
+[data-theme="light"] .manual-entry-title,
+[data-theme="light"] .missed-finisher-title {
+  color: #001a48;
+}
+
+[data-theme="light"] .drop-subtitle,
+[data-theme="light"] .drop-hint,
+[data-theme="light"] .format-note,
+[data-theme="light"] .text-muted {
+  color: #444651;
+}
+
+[data-theme="light"] .manual-entry-grid,
+[data-theme="light"] .acred-add-fields,
+[data-theme="light"] .config-race-actions {
+  gap: 0.9rem;
+}
+
+[data-theme="light"] .badge-green,
+[data-theme="light"] .category-tag,
+[data-theme="light"] .distance-badge {
+  background: #d7e2ff;
+  border-color: #acc7ff;
+  color: #001a48;
+}
+
+[data-theme="light"] .gender-badge {
+  border-color: #c4c6d2;
+}
+
+[data-theme="light"] .dorsal-badge {
+  background: #001a48;
+  color: #ffffff;
+  border-color: #001a48;
+}
+
+[data-theme="light"] .acred-section,
+[data-theme="light"] .acred-card,
+[data-theme="light"] .recent-finishers,
+[data-theme="light"] .dorsal-input-section,
+[data-theme="light"] .race-clock-wrapper,
+[data-theme="light"] .empty-state {
+  background: #ffffff;
+  border: 1px solid #c4c6d2;
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+}
+
+[data-theme="light"] .acred-section {
+  padding: 1rem;
+}
+
+[data-theme="light"] .acred-card {
+  padding: 1rem;
+}
+
+[data-theme="light"] .acred-nombre,
+[data-theme="light"] .name-cell,
+[data-theme="light"] .recent-title {
+  color: #111c2c;
+}
+
+[data-theme="light"] .acred-documento,
+[data-theme="light"] .acred-age,
+[data-theme="light"] .acred-meta {
+  color: #444651;
+}
+
+[data-theme="light"] .acred-stats-bar {
+  background: #f0f3ff;
+  border: 1px solid #d8e3fa;
+  border-radius: 0.5rem;
+}
+
+[data-theme="light"] .acred-stat-num,
+[data-theme="light"] .race-clock,
+[data-theme="light"] .crono-clock {
+  color: #001a48;
+}
+
+[data-theme="light"] .results-toolbar {
+  padding: 0.8rem;
+  border: 1px solid #c4c6d2;
+  border-radius: 0.5rem;
+  background: #ffffff;
+}
+
+[data-theme="light"] .results-searchbar {
+  padding: 0.75rem;
+  border: 1px solid #c4c6d2;
+  border-radius: 0.5rem;
+  background: #ffffff;
+}
+
+[data-theme="light"] .edit-mode-banner,
+[data-theme="light"] .results-copy-ok {
+  border-radius: 0.375rem;
+}
+
+[data-theme="light"] .error-panel,
+[data-theme="light"] .input-error-msg {
+  border-color: #ffdad6;
+  background: #fff7f6;
+  color: #93000a;
+}
+
+[data-theme="light"] .app-dialog {
+  border: 1px solid #c4c6d2;
+  border-radius: 0.5rem;
+  background: #ffffff;
+  box-shadow: 0 12px 42px rgba(0, 0, 0, 0.12);
+}
+
+[data-theme="light"] .app-dialog-header {
+  border-bottom: 1px solid #d8e3fa;
+}
+
+[data-theme="light"] .navbar-user-menu {
+  border-color: #c4c6d2;
+  background: #ffffff;
+  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="light"] .config-race-state-testing {
+  background: #fff2cc;
+  color: #7a4f00;
+}
+
+@media (max-width: 980px) {
+  [data-theme="light"] .app-sidebar-card {
+    background: rgba(255, 255, 255, 0.96);
+    backdrop-filter: blur(10px);
+  }
+}
+
+@media (max-width: 540px) {
+  [data-theme="light"] .acred-section {
+    padding: 0.85rem;
+  }
+
+  [data-theme="light"] .results-toolbar,
+  [data-theme="light"] .results-searchbar {
+    padding: 0.65rem;
   }
 }

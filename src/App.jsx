@@ -3,11 +3,13 @@ import ParticipantUpload from "./components/ParticipantUpload";
 import FinishLine from "./components/FinishLine";
 import Results from "./components/Results";
 import Acreditacion from "./components/Acreditacion";
+import Registrations from "./components/Registrations";
 import Login from "./components/Login";
 import Users from "./components/Users";
 import CronometroTab from "./components/CronometroTab";
 import CategoryConfig from "./components/CategoryConfig";
 import RaceSelector from "./components/RaceSelector";
+import WhatsAppSettings from "./components/WhatsAppSettings";
 import { api } from "./api";
 import { confirmDialog } from "./utils/dialog";
 import { DEFAULT_CATEGORIES } from "./utils/categories";
@@ -17,26 +19,32 @@ const POLL_INTERVAL = 2000;
 const POLLING_TABS = new Set(["meta", "resultados", "cronometro"]);
 const DEFAULT_RACE_DISTANCES = "5K, 10K";
 const DEFAULT_CERTIFICATE_TEMPLATE = "classic";
+const THEME_VERSION = "professional-light-v1";
 
 function getTabs(role, raceStarted, raceClosed) {
   const tabs = [
     { id: "participantes", label: "Participantes" },
-    { id: "acreditacion", label: "Acreditacion" },
+    { id: "inscripciones", label: "Inscripciones" },
+    { id: "acreditacion", label: "Acreditación" },
     { id: "meta", label: "Meta" },
     { id: "resultados", label: "Resultados" },
   ];
   if (raceStarted && !raceClosed) {
-    tabs.splice(2, 0, { id: "cronometro", label: "Cronometro" });
+    tabs.splice(2, 0, { id: "cronometro", label: "Cronómetro" });
   }
   if (role === "MASTER") {
     tabs.push({ id: "usuarios", label: "Usuarios" });
-    tabs.push({ id: "configuracion", label: "Configuracion" });
+    tabs.push({ id: "whatsapp", label: "WhatsApp" });
+    tabs.push({ id: "configuracion", label: "Configuración" });
   }
   return tabs;
 }
 
 export default function App() {
-  const [theme, setTheme] = useState(() => localStorage.getItem("theme") || "dark");
+  const [theme, setTheme] = useState(() => {
+    if (localStorage.getItem("themeVersion") !== THEME_VERSION) return "light";
+    return localStorage.getItem("theme") || "light";
+  });
   const [currentUser, setCurrentUser] = useState(() => {
     try {
       return JSON.parse(localStorage.getItem("user"));
@@ -86,6 +94,7 @@ export default function App() {
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
     localStorage.setItem("theme", theme);
+    localStorage.setItem("themeVersion", THEME_VERSION);
   }, [theme]);
 
   useEffect(() => {
@@ -302,6 +311,11 @@ export default function App() {
     return result;
   }, [fetchRace, selectedRaceId]);
 
+  const handleParticipantDelete = useCallback(async (participantId) => {
+    await api.deleteParticipant(participantId, selectedRaceId);
+    await fetchRace();
+  }, [fetchRace, selectedRaceId]);
+
   const handleStartRace = useCallback(async () => {
     await api.startRace(selectedRaceId);
     await fetchRace();
@@ -464,6 +478,8 @@ export default function App() {
     const badge =
       tab.id === "participantes"
         ? participants.length || null
+        : tab.id === "inscripciones"
+          ? null
         : tab.id === "acreditacion"
           ? participants.length || null
           : tab.id === "meta" || tab.id === "resultados"
@@ -494,7 +510,7 @@ export default function App() {
         </div>
 
         <div className="navbar-race-pill">
-          {selectedRace ? selectedRace.name : "Sin carrera"}
+          <span className="navbar-race-pill-name">{selectedRace ? selectedRace.name : "Sin carrera"}</span>
           {selectedRace?.isOfficial && (
             <span className="navbar-race-pill-status">Oficial</span>
           )}
@@ -512,7 +528,7 @@ export default function App() {
           )}
           {error === "offline" && (
             <button className="reconnect-btn" onClick={startPolling}>
-              Sin conexion - Reconectar
+              Sin conexión - Reconectar
             </button>
           )}
           <div className="navbar-user" ref={userMenuRef}>
@@ -649,7 +665,7 @@ export default function App() {
                       onChange={(event) => setNewRaceCertificatesEnabled(event.target.checked)}
                       disabled={creatingRace}
                     />
-                    <span>Generar certificados en resultados publicos</span>
+                    <span>Generar certificados en resultados públicos</span>
                   </label>
                   <label className="config-checkbox-field">
                     <input
@@ -658,7 +674,7 @@ export default function App() {
                       onChange={(event) => setNewRaceShowDorsalPublic(event.target.checked)}
                       disabled={creatingRace}
                     />
-                    <span>Mostrar dorsal en resultados publicos</span>
+                    <span>Mostrar dorsal en resultados públicos</span>
                   </label>
                   <label className="login-label" htmlFor="new-race-certificate-template">Diseño de certificado</label>
                   <select
@@ -725,8 +741,16 @@ export default function App() {
             categories={categories}
             onParticipantsLoad={handleParticipantsLoad}
             onParticipantDorsalsLoad={handleParticipantDorsalsLoad}
+            onParticipantDelete={handleParticipantDelete}
           />
         )}
+              {activeTab === "inscripciones" && (
+                <Registrations
+                  race={selectedRace}
+                  raceId={selectedRaceId}
+                  onApproved={fetchRace}
+                />
+              )}
               {activeTab === "acreditacion" && (
                 <Acreditacion
                   participants={participants}
@@ -777,6 +801,7 @@ export default function App() {
                 />
               )}
               {activeTab === "usuarios" && currentUser.role === "MASTER" && <Users />}
+              {activeTab === "whatsapp" && currentUser.role === "MASTER" && <WhatsAppSettings />}
               {activeTab === "configuracion" && currentUser.role === "MASTER" && (
                 <CategoryConfig
                   categories={categories}

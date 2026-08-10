@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { api } from "../api";
 import { getCategory, DEFAULT_CATEGORIES } from "../utils/categories";
+import { confirmDialog, errorDialog } from "../utils/dialog";
 
 // ── Extraer nombre del response RENIEC ────────────────────────────────────
 function extractReniecName(data) {
@@ -210,6 +211,7 @@ export default function Acreditacion({ participants, categories = DEFAULT_CATEGO
   const [editingParticipantForm, setEditingParticipantForm] = useState(EMPTY_FORM);
   const [editingParticipantError, setEditingParticipantError] = useState("");
   const [editingParticipantBusy, setEditingParticipantBusy] = useState(false);
+  const [deletingParticipantId, setDeletingParticipantId] = useState(null);
   const searchInputRef = useRef(null);
 
   // Manual add form
@@ -435,6 +437,30 @@ export default function Acreditacion({ participants, categories = DEFAULT_CATEGO
       setEditingParticipantError(err.message || "No se pudo actualizar el participante.");
     } finally {
       setEditingParticipantBusy(false);
+    }
+  };
+
+  const deleteParticipant = async (participant) => {
+    const ok = await confirmDialog({
+      title: "Eliminar participante",
+      text: `Se eliminara a ${participant.nombre}. Si tiene dorsal y resultado asociado, tambien se eliminara ese resultado de prueba.`,
+      confirmText: "Eliminar",
+    });
+    if (!ok) return;
+
+    setDeletingParticipantId(participant.id);
+    try {
+      await api.deleteParticipant(participant.id, raceId);
+      if (editingParticipantId === participant.id) cancelEditParticipant();
+      if (editingDorsalId === participant.id) cancelEditDorsal();
+      await handleUpdate();
+    } catch (err) {
+      await errorDialog({
+        title: "No se pudo eliminar",
+        text: err.message || "Ocurrio un error al eliminar el participante.",
+      });
+    } finally {
+      setDeletingParticipantId(null);
     }
   };
 
@@ -856,9 +882,14 @@ export default function Acreditacion({ participants, categories = DEFAULT_CATEGO
                             {editingParticipantError && <span className="acred-dorsal-err">{editingParticipantError}</span>}
                           </div>
                         ) : (
-                          <button className="btn btn-secondary btn-sm" onClick={() => startEditParticipant(p)}>
-                            Editar
-                          </button>
+                          <div className="acred-row-actions">
+                            <button className="btn btn-secondary btn-sm" onClick={() => startEditParticipant(p)} disabled={deletingParticipantId === p.id}>
+                              Editar
+                            </button>
+                            <button className="btn btn-danger btn-sm" onClick={() => deleteParticipant(p)} disabled={deletingParticipantId === p.id}>
+                              {deletingParticipantId === p.id ? "Eliminando..." : "Eliminar"}
+                            </button>
+                          </div>
                         )}
                       </td>
                     </tr>

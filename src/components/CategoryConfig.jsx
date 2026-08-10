@@ -17,6 +17,98 @@ function newRow() {
   return { name: "", minAge: "", maxAge: "", distance: "", gender: "" };
 }
 
+function pricesToText(prices) {
+  if (!Array.isArray(prices)) return "";
+  return prices
+    .map((item) => {
+      const base = `${String(item.distance || "").toUpperCase()}=${Number(item.price || 0)}`;
+      const label = String(item.label || "").trim();
+      return label ? `${base}|${label}` : base;
+    })
+    .join(", ");
+}
+
+function parsePricesText(value) {
+  return String(value || "")
+    .split(",")
+    .map((chunk) => {
+      const [distance, priceAndLabel] = chunk.split("=");
+      const [price, label] = String(priceAndLabel || "").split("|");
+      return {
+        distance: String(distance || "").trim().toUpperCase(),
+        price: Number(String(price || "").trim()),
+        label: String(label || "").trim() || null,
+      };
+    })
+    .filter((item) => item.distance && Number.isFinite(item.price) && item.price >= 0);
+}
+
+function phonesToText(phones) {
+  return Array.isArray(phones) ? phones.join("\n") : "";
+}
+
+function parsePhonesText(value) {
+  return [
+    ...new Set(
+      String(value || "")
+        .split(/[\n,;]/)
+        .map((phone) => phone.replace(/\D/g, ""))
+        .filter((phone) => phone.length >= 9)
+    ),
+  ];
+}
+
+function emptyBankAccount() {
+  return { bank: "", holder: "", accountNumber: "", cci: "", currency: "PEN", notes: "" };
+}
+
+function emptyDigitalWallet() {
+  return { type: "YAPE", phone: "", holder: "", qrPath: "", notes: "" };
+}
+
+function normalizePaymentMethods(value) {
+  return {
+    bankAccounts: Array.isArray(value?.bankAccounts) && value.bankAccounts.length > 0
+      ? value.bankAccounts.map((item) => ({ ...emptyBankAccount(), ...item }))
+      : [emptyBankAccount()],
+    digitalWallets: Array.isArray(value?.digitalWallets) && value.digitalWallets.length > 0
+      ? value.digitalWallets.map((item) => ({ ...emptyDigitalWallet(), ...item }))
+      : [emptyDigitalWallet()],
+  };
+}
+
+function compactPaymentMethods(value) {
+  const bankAccounts = value.bankAccounts
+    .map((item) => ({
+      bank: item.bank.trim(),
+      holder: item.holder.trim(),
+      accountNumber: item.accountNumber.trim(),
+      cci: item.cci.trim(),
+      currency: item.currency.trim().toUpperCase() || "PEN",
+      notes: item.notes.trim(),
+    }))
+    .filter((item) => item.bank || item.holder || item.accountNumber || item.cci);
+  const digitalWallets = value.digitalWallets
+    .map((item) => ({
+      type: item.type.trim().toUpperCase() || "YAPE",
+      phone: item.phone.replace(/\D/g, ""),
+      holder: item.holder.trim(),
+      qrPath: item.qrPath,
+      notes: item.notes.trim(),
+    }))
+    .filter((item) => item.phone || item.holder || item.qrPath || item.notes);
+  return { bankAccounts, digitalWallets };
+}
+
+function emptyDiscountForm() {
+  return { code: "", percent: "", maxUses: "", validUntil: "", active: true };
+}
+
+function formatDiscountDate(value) {
+  if (!value) return "Sin vencimiento";
+  return new Date(value).toLocaleDateString("es-PE", { timeZone: "UTC" });
+}
+
 export default function CategoryConfig({
   categories,
   onCategoriesChange,
@@ -35,6 +127,16 @@ export default function CategoryConfig({
   const [certificatesEnabled, setCertificatesEnabled] = useState(race?.certificatesEnabled !== false);
   const [showDorsalPublic, setShowDorsalPublic] = useState(race?.showDorsalPublic !== false);
   const [certificateTemplate, setCertificateTemplate] = useState(race?.certificateTemplate || "classic");
+  const [registrationsEnabled, setRegistrationsEnabled] = useState(race?.registrationsEnabled === true);
+  const [discountsEnabled, setDiscountsEnabled] = useState(race?.discountsEnabled === true);
+  const [registrationPricesText, setRegistrationPricesText] = useState(pricesToText(race?.registrationPrices));
+  const [registrationInstructions, setRegistrationInstructions] = useState(race?.registrationInstructions || "");
+  const [registrationNotificationPhonesText, setRegistrationNotificationPhonesText] = useState(phonesToText(race?.registrationNotificationPhones));
+  const [paymentMethods, setPaymentMethods] = useState(() => normalizePaymentMethods(race?.registrationPaymentMethods));
+  const [uploadingQr, setUploadingQr] = useState(null);
+  const [uploadingRaceAsset, setUploadingRaceAsset] = useState("");
+  const [discountCodes, setDiscountCodes] = useState([]);
+  const [discountForm, setDiscountForm] = useState(() => emptyDiscountForm());
 
   const distanceOptions = useMemo(() => {
     const raceDistances = Array.isArray(race?.distances) ? race.distances : [];
@@ -50,8 +152,28 @@ export default function CategoryConfig({
     setCertificatesEnabled(race?.certificatesEnabled !== false);
     setShowDorsalPublic(race?.showDorsalPublic !== false);
     setCertificateTemplate(race?.certificateTemplate || "classic");
+    setRegistrationsEnabled(race?.registrationsEnabled === true);
+    setDiscountsEnabled(race?.discountsEnabled === true);
+    setRegistrationPricesText(pricesToText(race?.registrationPrices));
+    setRegistrationInstructions(race?.registrationInstructions || "");
+    setRegistrationNotificationPhonesText(phonesToText(race?.registrationNotificationPhones));
+    setPaymentMethods(normalizePaymentMethods(race?.registrationPaymentMethods));
     setMsg(null);
-  }, [categories, race?.certificateTemplate, race?.certificatesEnabled, race?.distances, race?.eventDate, race?.publicNotice, race?.showDorsalPublic]);
+  }, [categories, race?.certificateTemplate, race?.certificatesEnabled, race?.discountsEnabled, race?.distances, race?.eventDate, race?.publicNotice, race?.registrationInstructions, race?.registrationNotificationPhones, race?.registrationPaymentMethods, race?.registrationPrices, race?.registrationsEnabled, race?.showDorsalPublic]);
+
+  async function loadDiscountCodes() {
+    if (!raceId) return;
+    try {
+      const data = await api.getDiscountCodes(raceId);
+      setDiscountCodes(data.discountCodes || []);
+    } catch (err) {
+      setMsg({ type: "error", text: err.message || "No se pudieron cargar los descuentos." });
+    }
+  }
+
+  useEffect(() => {
+    loadDiscountCodes();
+  }, [raceId]);
 
   function setRow(index, field, value) {
     setRows((prev) => prev.map((row, rowIndex) => (
@@ -68,6 +190,119 @@ export default function CategoryConfig({
   function removeRow(index) {
     setRows((prev) => prev.filter((_, rowIndex) => rowIndex !== index));
     setMsg(null);
+  }
+
+  function updateBankAccount(index, field, value) {
+    setPaymentMethods((prev) => ({
+      ...prev,
+      bankAccounts: prev.bankAccounts.map((item, itemIndex) => (
+        itemIndex === index ? { ...item, [field]: value } : item
+      )),
+    }));
+    setMsg(null);
+  }
+
+  function addBankAccount() {
+    setPaymentMethods((prev) => ({ ...prev, bankAccounts: [...prev.bankAccounts, emptyBankAccount()] }));
+    setMsg(null);
+  }
+
+  function removeBankAccount(index) {
+    setPaymentMethods((prev) => ({
+      ...prev,
+      bankAccounts: prev.bankAccounts.length > 1
+        ? prev.bankAccounts.filter((_, itemIndex) => itemIndex !== index)
+        : [emptyBankAccount()],
+    }));
+    setMsg(null);
+  }
+
+  function updateDigitalWallet(index, field, value) {
+    setPaymentMethods((prev) => ({
+      ...prev,
+      digitalWallets: prev.digitalWallets.map((item, itemIndex) => (
+        itemIndex === index ? { ...item, [field]: value } : item
+      )),
+    }));
+    setMsg(null);
+  }
+
+  function addDigitalWallet() {
+    setPaymentMethods((prev) => ({ ...prev, digitalWallets: [...prev.digitalWallets, emptyDigitalWallet()] }));
+    setMsg(null);
+  }
+
+  function removeDigitalWallet(index) {
+    setPaymentMethods((prev) => ({
+      ...prev,
+      digitalWallets: prev.digitalWallets.length > 1
+        ? prev.digitalWallets.filter((_, itemIndex) => itemIndex !== index)
+        : [emptyDigitalWallet()],
+    }));
+    setMsg(null);
+  }
+
+  async function uploadWalletQr(index, file) {
+    if (!raceId || !file) return;
+    setUploadingQr(index);
+    setMsg(null);
+    try {
+      const result = await api.uploadPaymentQr(raceId, file);
+      updateDigitalWallet(index, "qrPath", result.qrPath || "");
+      setMsg({ type: "ok", text: "QR cargado correctamente. Guarda los datos para publicarlo." });
+    } catch (err) {
+      setMsg({ type: "error", text: err.message || "No se pudo subir el QR." });
+    } finally {
+      setUploadingQr(null);
+    }
+  }
+
+  async function uploadRaceRulesPdf(file) {
+    if (!raceId || !file) return;
+    setUploadingRaceAsset("rules");
+    setMsg(null);
+    try {
+      await api.uploadRaceRulesPdf(raceId, file);
+      setMsg({ type: "ok", text: "Bases de la carrera cargadas." });
+      await onRaceUpdated?.();
+    } catch (err) {
+      setMsg({ type: "error", text: err.message || "No se pudo subir el PDF." });
+    } finally {
+      setUploadingRaceAsset("");
+    }
+  }
+
+  async function uploadRaceLogo(file) {
+    if (!raceId || !file) return;
+    setUploadingRaceAsset("logo");
+    setMsg(null);
+    try {
+      await api.uploadRaceLogo(raceId, file);
+      setMsg({ type: "ok", text: "Logo de carrera cargado." });
+      await onRaceUpdated?.();
+    } catch (err) {
+      setMsg({ type: "error", text: err.message || "No se pudo subir el logo." });
+    } finally {
+      setUploadingRaceAsset("");
+    }
+  }
+
+  async function clearRaceAsset(field) {
+    if (!raceId) return;
+    const payload = field === "rules"
+      ? { registrationRulesPdfPath: null, registrationRulesPdfOriginalName: null }
+      : { raceLogoPath: null, raceLogoOriginalName: null };
+    setBusy(true);
+    setMsg(null);
+    try {
+      await api.updateRace(raceId, payload);
+      setMsg({ type: "ok", text: field === "rules" ? "Bases retiradas del formulario." : "Logo retirado del formulario." });
+      await onRaceUpdated?.();
+    } catch (err) {
+      setMsg({ type: "error", text: err.message || "No se pudo actualizar la carrera." });
+    } finally {
+      setBusy(false);
+    }
   }
 
   function moveUp(index) {
@@ -183,11 +418,69 @@ export default function CategoryConfig({
         certificatesEnabled,
         showDorsalPublic,
         certificateTemplate,
+        registrationsEnabled,
+        discountsEnabled,
+        registrationPrices: parsePricesText(registrationPricesText),
+        registrationInstructions: registrationInstructions.trim() || null,
+        registrationNotificationPhones: parsePhonesText(registrationNotificationPhonesText),
+        registrationPaymentMethods: compactPaymentMethods(paymentMethods),
       });
       setMsg({ type: "ok", text: "Datos de la carrera guardados." });
       await onRaceUpdated?.();
     } catch (err) {
       setMsg({ type: "error", text: err.message || "No se pudo guardar la información de la carrera." });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleCreateDiscount(event) {
+    event.preventDefault();
+    if (!raceId) return;
+    const code = discountForm.code.trim().toUpperCase().replace(/\s+/g, "");
+    const percent = Number(discountForm.percent);
+    const maxUses = discountForm.maxUses === "" ? null : Number.parseInt(discountForm.maxUses, 10);
+
+    if (!code) {
+      setMsg({ type: "error", text: "Ingresa el codigo de descuento." });
+      return;
+    }
+    if (!Number.isFinite(percent) || percent <= 0 || percent > 100) {
+      setMsg({ type: "error", text: "El porcentaje debe estar entre 1 y 100." });
+      return;
+    }
+    if (maxUses !== null && (!Number.isFinite(maxUses) || maxUses <= 0)) {
+      setMsg({ type: "error", text: "El limite de usos debe ser mayor a 0." });
+      return;
+    }
+
+    setBusy(true);
+    try {
+      await api.createDiscountCode({
+        code,
+        percent,
+        maxUses,
+        validUntil: discountForm.validUntil || null,
+        active: discountForm.active,
+      }, raceId);
+      setDiscountForm(emptyDiscountForm());
+      setMsg({ type: "ok", text: "Codigo de descuento creado." });
+      await loadDiscountCodes();
+    } catch (err) {
+      setMsg({ type: "error", text: err.message || "No se pudo crear el descuento." });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function toggleDiscountCode(discountCode) {
+    setBusy(true);
+    try {
+      await api.updateDiscountCode(discountCode.id, { active: !discountCode.active }, raceId);
+      setMsg({ type: "ok", text: discountCode.active ? "Codigo desactivado." : "Codigo activado." });
+      await loadDiscountCodes();
+    } catch (err) {
+      setMsg({ type: "error", text: err.message || "No se pudo actualizar el descuento." });
     } finally {
       setBusy(false);
     }
@@ -287,6 +580,215 @@ export default function CategoryConfig({
                 <option value="trail">Trail verde</option>
               </select>
             </label>
+            <label className="config-checkbox-field">
+              <input
+                type="checkbox"
+                checked={registrationsEnabled}
+                onChange={(event) => {
+                  setRegistrationsEnabled(event.target.checked);
+                  setMsg(null);
+                }}
+              />
+              <span>Habilitar formulario de inscripciones</span>
+            </label>
+            <label className="config-checkbox-field">
+              <input
+                type="checkbox"
+                checked={discountsEnabled}
+                onChange={(event) => {
+                  setDiscountsEnabled(event.target.checked);
+                  setMsg(null);
+                }}
+                disabled={!registrationsEnabled}
+              />
+              <span>Mostrar y permitir codigos de descuento</span>
+            </label>
+            <label className="config-date-field config-distances-field">
+              <span>Precios por distancia</span>
+              <input
+                className="config-input"
+                type="text"
+                value={registrationPricesText}
+                onChange={(event) => {
+                  setRegistrationPricesText(event.target.value);
+                  setMsg(null);
+                }}
+                placeholder="Ej: 5K=50|Preventa, 10K=70|Venta regular"
+              />
+              <small className="config-field-help">Usa | para mostrar una etiqueta como Preventa, Venta regular o Últimos cupos.</small>
+            </label>
+            <label className="config-notice-field">
+              <span>Instrucciones de pago para inscripciones</span>
+              <textarea
+                className="config-input config-notice-textarea"
+                rows="4"
+                value={registrationInstructions}
+                onChange={(event) => {
+                  setRegistrationInstructions(event.target.value);
+                  setMsg(null);
+                }}
+                placeholder="Ej: Yape/Plin 999 999 999 a nombre de Cajamarca Runners. Adjunta tu voucher legible."
+              />
+            </label>
+            <div className="payment-methods-config">
+              <div className="payment-methods-section">
+                <div className="payment-methods-head">
+                  <div>
+                    <span>Cuentas bancarias</span>
+                    <small>Datos visibles en el formulario publico.</small>
+                  </div>
+                  <button type="button" className="btn btn-secondary btn-sm" onClick={addBankAccount}>
+                    + Agregar cuenta
+                  </button>
+                </div>
+                {paymentMethods.bankAccounts.map((account, index) => (
+                  <div key={index} className="payment-method-card">
+                    <div className="payment-method-grid">
+                      <label>
+                        <span>Banco</span>
+                        <input className="config-input" value={account.bank} onChange={(event) => updateBankAccount(index, "bank", event.target.value)} placeholder="BCP" />
+                      </label>
+                      <label>
+                        <span>Titular</span>
+                        <input className="config-input" value={account.holder} onChange={(event) => updateBankAccount(index, "holder", event.target.value)} placeholder="Nombre del titular" />
+                      </label>
+                      <label>
+                        <span>Numero de cuenta</span>
+                        <input className="config-input" value={account.accountNumber} onChange={(event) => updateBankAccount(index, "accountNumber", event.target.value)} placeholder="000-0000000-0-00" />
+                      </label>
+                      <label>
+                        <span>CCI</span>
+                        <input className="config-input" value={account.cci} onChange={(event) => updateBankAccount(index, "cci", event.target.value)} placeholder="Opcional" />
+                      </label>
+                      <label>
+                        <span>Moneda</span>
+                        <input className="config-input" value={account.currency} onChange={(event) => updateBankAccount(index, "currency", event.target.value.toUpperCase())} placeholder="PEN" />
+                      </label>
+                      <label>
+                        <span>Nota</span>
+                        <input className="config-input" value={account.notes} onChange={(event) => updateBankAccount(index, "notes", event.target.value)} placeholder="Opcional" />
+                      </label>
+                    </div>
+                    <button type="button" className="btn btn-danger btn-sm" onClick={() => removeBankAccount(index)}>
+                      Quitar cuenta
+                    </button>
+                  </div>
+                ))}
+              </div>
+
+              <div className="payment-methods-section">
+                <div className="payment-methods-head">
+                  <div>
+                    <span>Billetera digital</span>
+                    <small>Yape, Plin u otra billetera con QR opcional.</small>
+                  </div>
+                  <button type="button" className="btn btn-secondary btn-sm" onClick={addDigitalWallet}>
+                    + Agregar billetera
+                  </button>
+                </div>
+                {paymentMethods.digitalWallets.map((wallet, index) => (
+                  <div key={index} className="payment-method-card">
+                    <div className="payment-method-grid payment-method-grid-wallet">
+                      <label>
+                        <span>Tipo</span>
+                        <select className="config-input" value={wallet.type} onChange={(event) => updateDigitalWallet(index, "type", event.target.value)}>
+                          <option value="YAPE">Yape</option>
+                          <option value="PLIN">Plin</option>
+                          <option value="OTRO">Otro</option>
+                        </select>
+                      </label>
+                      <label>
+                        <span>Numero</span>
+                        <input className="config-input" value={wallet.phone} onChange={(event) => updateDigitalWallet(index, "phone", event.target.value.replace(/\D/g, ""))} placeholder="999888777" />
+                      </label>
+                      <label>
+                        <span>Titular</span>
+                        <input className="config-input" value={wallet.holder} onChange={(event) => updateDigitalWallet(index, "holder", event.target.value)} placeholder="Nombre del titular" />
+                      </label>
+                      <label>
+                        <span>Nota</span>
+                        <input className="config-input" value={wallet.notes} onChange={(event) => updateDigitalWallet(index, "notes", event.target.value)} placeholder="Opcional" />
+                      </label>
+                    </div>
+                    <div className="payment-qr-row">
+                      {wallet.qrPath ? (
+                        <img className="payment-qr-preview" src={api.getAssetUrl(wallet.qrPath)} alt={`QR ${wallet.type}`} />
+                      ) : (
+                        <div className="payment-qr-empty">Sin QR</div>
+                      )}
+                      <label className="payment-qr-upload">
+                        <input type="file" accept=".jpg,.jpeg,.png,.webp" onChange={(event) => uploadWalletQr(index, event.target.files?.[0])} />
+                        <span>{uploadingQr === index ? "Subiendo..." : "Subir QR"}</span>
+                      </label>
+                      <button type="button" className="btn btn-secondary btn-sm" onClick={() => updateDigitalWallet(index, "qrPath", "")} disabled={!wallet.qrPath}>
+                        Quitar QR
+                      </button>
+                      <button type="button" className="btn btn-danger btn-sm" onClick={() => removeDigitalWallet(index)}>
+                        Quitar billetera
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="race-assets-config">
+              <div className="race-asset-card">
+                <div>
+                  <span>Bases de la carrera</span>
+                  <small>PDF obligatorio para que el corredor pueda leer y aceptar antes de inscribirse.</small>
+                </div>
+                {race.registrationRulesPdfPath ? (
+                  <a className="race-asset-link" href={api.getAssetUrl(race.registrationRulesPdfPath)} target="_blank" rel="noreferrer">
+                    {race.registrationRulesPdfOriginalName || "Ver bases PDF"}
+                  </a>
+                ) : (
+                  <small className="text-muted">Aun no hay PDF configurado.</small>
+                )}
+                <div className="race-asset-actions">
+                  <label className="payment-qr-upload">
+                    <input type="file" accept="application/pdf,.pdf" onChange={(event) => uploadRaceRulesPdf(event.target.files?.[0])} />
+                    <span>{uploadingRaceAsset === "rules" ? "Subiendo..." : "Subir PDF"}</span>
+                  </label>
+                  <button type="button" className="btn btn-secondary btn-sm" onClick={() => clearRaceAsset("rules")} disabled={busy || !race.registrationRulesPdfPath}>
+                    Quitar
+                  </button>
+                </div>
+              </div>
+
+              <div className="race-asset-card">
+                <div>
+                  <span>Logo de la carrera</span>
+                  <small>Si existe, se muestra en el formulario publico y en la confirmacion.</small>
+                </div>
+                {race.raceLogoPath ? (
+                  <img className="race-logo-preview" src={api.getAssetUrl(race.raceLogoPath)} alt={race.raceLogoOriginalName || "Logo de carrera"} />
+                ) : (
+                  <small className="text-muted">Aun no hay logo configurado.</small>
+                )}
+                <div className="race-asset-actions">
+                  <label className="payment-qr-upload">
+                    <input type="file" accept=".jpg,.jpeg,.png,.webp" onChange={(event) => uploadRaceLogo(event.target.files?.[0])} />
+                    <span>{uploadingRaceAsset === "logo" ? "Subiendo..." : "Subir logo"}</span>
+                  </label>
+                  <button type="button" className="btn btn-secondary btn-sm" onClick={() => clearRaceAsset("logo")} disabled={busy || !race.raceLogoPath}>
+                    Quitar
+                  </button>
+                </div>
+              </div>
+            </div>
+            <label className="config-notice-field">
+              <span>Contactos de aviso para validar pagos</span>
+              <textarea
+                className="config-input config-notice-textarea"
+                rows="4"
+                value={registrationNotificationPhonesText}
+                onChange={(event) => {
+                  setRegistrationNotificationPhonesText(event.target.value);
+                  setMsg(null);
+                }}
+                placeholder={"Ej:\n999888777\n933631263"}
+              />
+            </label>
             <button className="btn btn-secondary" onClick={handleSaveRaceInfo} disabled={busy}>
               Guardar datos
             </button>
@@ -302,6 +804,85 @@ export default function CategoryConfig({
       <p className="config-desc">
         Define categorías por distancia, sexo y rango de edad para la carrera activa. Si dejas distancia o sexo vacíos, la regla aplica a todos.
       </p>
+
+      <div className="config-discounts-panel">
+        <div className="section-header">
+          <div>
+            <h2>Codigos de descuento</h2>
+            <p className="text-muted">Crea codigos por carrera con porcentaje, cupos y vencimiento opcional.</p>
+          </div>
+        </div>
+
+        <form className="config-discount-form" onSubmit={handleCreateDiscount}>
+          <label>
+            <span>Codigo</span>
+            <input
+              className="config-input"
+              value={discountForm.code}
+              onChange={(event) => setDiscountForm((prev) => ({ ...prev, code: event.target.value.toUpperCase().replace(/\s+/g, "") }))}
+              placeholder="PRIMEROLA"
+            />
+          </label>
+          <label>
+            <span>Descuento %</span>
+            <input
+              className="config-input"
+              type="number"
+              min="1"
+              max="100"
+              step="0.01"
+              value={discountForm.percent}
+              onChange={(event) => setDiscountForm((prev) => ({ ...prev, percent: event.target.value }))}
+              placeholder="20"
+            />
+          </label>
+          <label>
+            <span>Limite de usos</span>
+            <input
+              className="config-input"
+              type="number"
+              min="1"
+              value={discountForm.maxUses}
+              onChange={(event) => setDiscountForm((prev) => ({ ...prev, maxUses: event.target.value }))}
+              placeholder="5"
+            />
+          </label>
+          <label>
+            <span>Valido hasta</span>
+            <input
+              className="config-input"
+              type="date"
+              value={discountForm.validUntil}
+              onChange={(event) => setDiscountForm((prev) => ({ ...prev, validUntil: event.target.value }))}
+            />
+          </label>
+          <label className="config-checkbox-field">
+            <input
+              type="checkbox"
+              checked={discountForm.active}
+              onChange={(event) => setDiscountForm((prev) => ({ ...prev, active: event.target.checked }))}
+            />
+            <span>Activo</span>
+          </label>
+          <button className="btn btn-primary" type="submit" disabled={busy}>Crear codigo</button>
+        </form>
+
+        <div className="config-discount-list">
+          {discountCodes.length === 0 ? (
+            <p className="text-muted">Aun no hay codigos de descuento para esta carrera.</p>
+          ) : discountCodes.map((discountCode) => (
+            <div key={discountCode.id} className="config-discount-row">
+              <div>
+                <strong>{discountCode.code}</strong>
+                <span>{Number(discountCode.percent).toFixed(2)}% · {discountCode.usedCount}/{discountCode.maxUses ?? "sin limite"} usados · {formatDiscountDate(discountCode.validUntil)}</span>
+              </div>
+              <button className="btn btn-secondary btn-sm" onClick={() => toggleDiscountCode(discountCode)} disabled={busy}>
+                {discountCode.active ? "Desactivar" : "Activar"}
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
 
       <div className="config-table-wrapper">
         <table className="data-table config-cat-table">
