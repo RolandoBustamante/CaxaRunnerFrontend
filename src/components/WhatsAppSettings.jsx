@@ -56,8 +56,19 @@ export default function WhatsAppSettings() {
       return;
     }
     setSending(true);
-    setMessage("");
+    setMessage("Verificando WhatsApp...");
     try {
+      const currentStatus = await api.getWhatsAppStatus();
+      setStatus(currentStatus);
+      if (!currentStatus.loggedIn) {
+        setMessage("WhatsApp no esta conectado. Escanea el QR o reinicia el cliente.");
+        return;
+      }
+      if (!currentStatus.isReady) {
+        setMessage("WhatsApp esta conectado, pero aun esta cargando internamente. Espera unos segundos y actualiza.");
+        return;
+      }
+      setMessage("Enviando mensaje de prueba...");
       const result = await api.sendWhatsAppTest(testNumber, "Mensaje de prueba desde CaxaRunner.");
       setMessage(result.success ? "Mensaje enviado." : result.error || result.message || "No se pudo enviar.");
     } catch (err) {
@@ -70,6 +81,14 @@ export default function WhatsAppSettings() {
   useEffect(() => {
     loadStatus();
   }, []);
+
+  useEffect(() => {
+    if (!status.loggedIn || status.isReady) return undefined;
+    const interval = window.setInterval(() => {
+      api.getWhatsAppStatus().then(setStatus).catch(() => {});
+    }, 4000);
+    return () => window.clearInterval(interval);
+  }, [status.loggedIn, status.isReady]);
 
   return (
     <div className="whatsapp-settings">
@@ -89,6 +108,9 @@ export default function WhatsAppSettings() {
           <div>
             <h3>{status.loggedIn ? "WhatsApp conectado" : "WhatsApp no conectado"}</h3>
             <p>Estado: {status.state || (status.loggedIn ? "CONNECTED" : "QR pendiente")}</p>
+            {status.loggedIn && !status.isReady && (
+              <p>Conectado, cargando WhatsApp Web internamente.</p>
+            )}
           </div>
         </div>
 
