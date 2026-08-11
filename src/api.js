@@ -249,6 +249,8 @@ export const api = {
     request("DELETE", `/registrations/${idToPath(id)}`, raceId == null ? undefined : { raceId }),
   notifyRegistrationPayment: (id, raceId) =>
     request("POST", `/registrations/${idToPath(id)}/notify-payment`, { raceId, baseUrl: PUBLIC_APP_URL || undefined }),
+  notifyRegistrationConfirmation: (id, raceId) =>
+    request("POST", `/registrations/${idToPath(id)}/notify-confirmation`, raceId == null ? undefined : { raceId }),
   downloadRegistrationVoucher: (registrationId, voucherId, raceId) =>
     requestBlob("GET", withRaceId(`/registrations/${idToPath(registrationId)}/vouchers/${idToPath(voucherId)}`, raceId)),
   downloadRegistrationParticipantPhoto: (registrationId, participantId, raceId) =>

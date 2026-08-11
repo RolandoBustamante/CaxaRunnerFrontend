@@ -110,6 +110,19 @@ export default function Registrations({ race, raceId, onApproved }) {
     }
   }
 
+  async function sendRunnerConfirmation(registration) {
+    setBusyId(registration.id);
+    setMessage("");
+    try {
+      const result = await api.notifyRegistrationConfirmation(registration.id, raceId);
+      setMessage(result.message || "Confirmacion enviada.");
+    } catch (err) {
+      setMessage(err.message || "No se pudo enviar la confirmacion.");
+    } finally {
+      setBusyId(null);
+    }
+  }
+
   async function openParticipantPhoto(registrationId, participantId) {
     const result = await api.downloadRegistrationParticipantPhoto(registrationId, participantId, raceId);
     const url = URL.createObjectURL(result.blob);
@@ -266,9 +279,14 @@ export default function Registrations({ race, raceId, onApproved }) {
                   </button>
                 )}
                 {registration.status === "APPROVED" && (
-                  <button className="btn btn-secondary btn-sm" onClick={() => copyRunnerConfirmation(registration)}>
-                    Copiar confirmación
-                  </button>
+                  <>
+                    <button className="btn btn-secondary btn-sm" onClick={() => copyRunnerConfirmation(registration)}>
+                      Copiar confirmacion
+                    </button>
+                    <button className="btn btn-secondary btn-sm" onClick={() => sendRunnerConfirmation(registration)} disabled={busyId === registration.id}>
+                      {busyId === registration.id ? "Enviando..." : "Enviar confirmacion"}
+                    </button>
+                  </>
                 )}
                 {registration.vouchers.map((voucher, index) => (
                   <button key={voucher.id} className="btn btn-secondary btn-sm" onClick={() => openVoucher(registration.id, voucher.id)}>
