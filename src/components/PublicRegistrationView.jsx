@@ -7,6 +7,7 @@ const EMPTY_PARTICIPANT = {
   documento: "",
   nombre: "",
   birthDate: "",
+  birthDateText: "",
   genero: "M",
   distancia: "",
   procedencia: "",
@@ -28,7 +29,6 @@ function getSlugFromPath() {
 
 function normalizeParticipant(participant) {
   return {
-    ...participant,
     documento: participant.documento.trim().toUpperCase(),
     nombre: participant.nombre.trim(),
     birthDate: participant.birthDate,
@@ -42,6 +42,44 @@ function normalizeParticipant(participant) {
     emergencyName: participant.emergencyName.trim(),
     emergencyPhone: participant.emergencyPhone.trim(),
   };
+}
+
+function isValidIsoDate(value) {
+  const text = String(value || "").trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(text)) return false;
+  const date = new Date(`${text}T00:00:00.000Z`);
+  return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === text;
+}
+
+function toIsoBirthDate(value) {
+  const text = String(value || "").trim();
+  if (!text) return "";
+  if (isValidIsoDate(text)) return text;
+
+  const compact = text.replace(/\D/g, "");
+  let day = "";
+  let month = "";
+  let year = "";
+
+  const separated = text.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
+  if (separated) {
+    [, day, month, year] = separated;
+  } else if (/^\d{8}$/.test(compact)) {
+    day = compact.slice(0, 2);
+    month = compact.slice(2, 4);
+    year = compact.slice(4, 8);
+  }
+
+  if (!day || !month || !year) return "";
+  const iso = `${year.padStart(4, "0")}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
+  return isValidIsoDate(iso) ? iso : "";
+}
+
+function formatBirthDateInput(value) {
+  const iso = toIsoBirthDate(value);
+  if (!iso) return String(value || "");
+  const [year, month, day] = iso.split("-");
+  return `${day}/${month}/${year}`;
 }
 
 function calculateAgeAtDate(birthDateValue, referenceValue) {
@@ -159,6 +197,24 @@ export default function PublicRegistrationView() {
     setError("");
   }
 
+  function setParticipantBirthDate(index, value, shouldFormat = false) {
+    const limited = String(value || "").replace(/[^\d/-]/g, "").slice(0, 10);
+    const iso = toIsoBirthDate(limited);
+    setParticipants((prev) => prev.map((participant, rowIndex) => (
+      rowIndex === index
+        ? {
+            ...participant,
+            birthDateText: shouldFormat && iso ? formatBirthDateInput(iso) : limited,
+            birthDate: iso,
+          }
+        : participant
+    )));
+    setPhotoReminderAccepted(false);
+    setAppliedDiscount(null);
+    setDiscountMessage("");
+    setError("");
+  }
+
   function handleRegistrationTypeChange(type) {
     setRegistrationType(type);
     setError("");
@@ -211,12 +267,6 @@ export default function PublicRegistrationView() {
     setError("");
   }
 
-  function openDatePicker(event) {
-    if (typeof event.currentTarget.showPicker === "function") {
-      event.currentTarget.showPicker();
-    }
-  }
-
   async function applyDiscountCode() {
     if (!discountsEnabled) return;
     const code = discountCodeInput.trim().toUpperCase();
@@ -261,7 +311,8 @@ export default function PublicRegistrationView() {
       if (seenDocs.has(participant.documento)) return `${label}: documento de identidad repetido.`;
       seenDocs.add(participant.documento);
       if (!participant.nombre) return `${label}: nombre requerido.`;
-      if (!participant.birthDate) return `${label}: fecha de nacimiento requerida.`;
+      if (!participant.birthDateText && !participant.birthDate) return `${label}: fecha de nacimiento requerida.`;
+      if (!participant.birthDate) return `${label}: fecha de nacimiento invalida. Usa DD/MM/AAAA.`;
       if (!participant.distancia) return `${label}: distancia requerida.`;
       if (!participant.procedencia) return `${label}: lugar de procedencia requerido.`;
       if (!participant.bloodType) return `${label}: tipo de sangre requerido.`;
@@ -431,7 +482,7 @@ export default function PublicRegistrationView() {
               <div className="registration-grid registration-grid-4">
                 <label>Documento de identidad<input value={participant.documento} onChange={(e) => setParticipant(index, "documento", e.target.value)} required /><small className="registration-field-help">Usa el documento real. Se usará para validar inscripción, resultados y certificados.</small></label>
                 <label>Nombre completo<input value={participant.nombre} onChange={(e) => setParticipant(index, "nombre", e.target.value)} required /></label>
-                <label>Fecha de nacimiento<input type="date" value={participant.birthDate} onClick={openDatePicker} onChange={(e) => setParticipant(index, "birthDate", e.target.value)} required /></label>
+                <label>Fecha de nacimiento<input type="text" inputMode="numeric" autoComplete="bday" placeholder="DD/MM/AAAA" value={participant.birthDateText ?? formatBirthDateInput(participant.birthDate)} onChange={(e) => setParticipantBirthDate(index, e.target.value)} onBlur={(e) => setParticipantBirthDate(index, e.target.value, true)} required /><small className="registration-field-help">Puedes escribir 15/11/1990 o 15111990.</small></label>
                 <label>Categoria<select value={getParticipantCategory(participant)} disabled><option value=""></option>{categoryOptions.map((category) => <option key={category} value={category}>{category}</option>)}</select>{Number.isFinite(getParticipantAge(participant)) && <small className="registration-field-help">Edad al dia de carrera: {getParticipantAge(participant)} anos</small>}</label>
                 <label>Género<select value={participant.genero} onChange={(e) => setParticipant(index, "genero", e.target.value)}><option value="M">Masculino</option><option value="F">Femenino</option></select></label>
                 <label>Distancia<select value={participant.distancia} onChange={(e) => setParticipant(index, "distancia", e.target.value)} required>{race.distances.map((distance) => <option key={distance} value={distance}>{distance}</option>)}</select></label>
