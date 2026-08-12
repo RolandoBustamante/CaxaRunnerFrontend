@@ -58,10 +58,24 @@ async function requestBlob(method, path, body) {
   }
 
   const disposition = res.headers.get("content-disposition") || "";
-  const fileNameMatch = disposition.match(/filename="([^"]+)"/i);
+  const fileNameMatch =
+    disposition.match(/filename\*=UTF-8''([^;]+)/i) ||
+    disposition.match(/filename="([^"]+)"/i) ||
+    disposition.match(/filename=([^;]+)/i);
+  const contentType = res.headers.get("content-type") || "";
+  const extension = contentType.includes("pdf")
+    ? ".pdf"
+    : contentType.includes("png")
+      ? ".png"
+      : contentType.includes("webp")
+        ? ".webp"
+        : contentType.includes("jpeg") || contentType.includes("jpg")
+          ? ".jpg"
+          : "";
+  const fallbackName = `archivo${extension}`;
   return {
     blob: await res.blob(),
-    fileName: fileNameMatch ? fileNameMatch[1] : "certificado.pdf",
+    fileName: fileNameMatch ? decodeURIComponent(fileNameMatch[1].trim().replace(/^"|"$/g, "")) : fallbackName,
   };
 }
 

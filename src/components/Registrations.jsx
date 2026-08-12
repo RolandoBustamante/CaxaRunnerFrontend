@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { api } from "../api";
 import { confirmDialog, errorDialog } from "../utils/dialog";
-import { openBlobViewer } from "../utils/blobViewer";
+import MediaViewerModal from "./MediaViewerModal";
 
 const STATUS_LABELS = {
   PENDING: "Pendientes",
@@ -33,6 +33,7 @@ export default function Registrations({ race, raceId, onApproved }) {
   const [loading, setLoading] = useState(false);
   const [busyId, setBusyId] = useState(null);
   const [message, setMessage] = useState("");
+  const [mediaViewer, setMediaViewer] = useState(null);
 
   const publicLink = useMemo(() => {
     if (!race?.slug) return "";
@@ -91,9 +92,10 @@ export default function Registrations({ race, raceId, onApproved }) {
     setMessage("Confirmación para corredor copiada.");
   }
 
-  async function openVoucher(registrationId, voucherId) {
+  async function openVoucher(registrationId, voucherId, index = 0) {
     const result = await api.downloadRegistrationVoucher(registrationId, voucherId, raceId);
-    openBlobViewer(result.blob, result.fileName || "Voucher");
+    const fallback = `voucher-${index + 1}`;
+    setMediaViewer({ blob: result.blob, title: result.fileName || `Voucher ${index + 1}`, fileName: result.fileName || fallback });
   }
 
   async function resendPaymentAlert(registration) {
@@ -124,7 +126,7 @@ export default function Registrations({ race, raceId, onApproved }) {
 
   async function openParticipantPhoto(registrationId, participantId) {
     const result = await api.downloadRegistrationParticipantPhoto(registrationId, participantId, raceId);
-    openBlobViewer(result.blob, "Foto del participante");
+    setMediaViewer({ blob: result.blob, title: "Foto del participante", fileName: "foto-participante" });
   }
 
   async function approve(id) {
@@ -286,7 +288,7 @@ export default function Registrations({ race, raceId, onApproved }) {
                   </>
                 )}
                 {registration.vouchers.map((voucher, index) => (
-                  <button key={voucher.id} className="btn btn-secondary btn-sm" onClick={() => openVoucher(registration.id, voucher.id)}>
+                  <button key={voucher.id} className="btn btn-secondary btn-sm" onClick={() => openVoucher(registration.id, voucher.id, index)}>
                     Voucher {index + 1}
                   </button>
                 ))}
@@ -309,6 +311,7 @@ export default function Registrations({ race, raceId, onApproved }) {
           ))}
         </div>
       )}
+      <MediaViewerModal file={mediaViewer} onClose={() => setMediaViewer(null)} />
     </div>
   );
 }

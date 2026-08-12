@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { api } from "../api";
 import { formatRaceDate } from "../utils/dates";
 import { DEFAULT_CATEGORIES, getCategoryName } from "../utils/categories";
+import { compressImageFile } from "../utils/imageCompression";
 
 const EMPTY_PARTICIPANT = {
   documento: "",
@@ -261,10 +262,21 @@ export default function PublicRegistrationView() {
     });
   }
 
-  function setParticipantPhoto(index, file) {
-    setParticipantPhotos((prev) => ({ ...prev, [index]: file || null }));
+  async function setParticipantPhoto(index, file) {
     setPhotoReminderAccepted(false);
     setError("");
+    if (!file) {
+      setParticipantPhotos((prev) => ({ ...prev, [index]: null }));
+      return;
+    }
+
+    setParticipantPhotos((prev) => ({ ...prev, [index]: file }));
+    try {
+      const optimizedFile = await compressImageFile(file);
+      setParticipantPhotos((prev) => ({ ...prev, [index]: optimizedFile }));
+    } catch {
+      setError("No se pudo optimizar la foto. Se enviara el archivo original.");
+    }
   }
 
   async function applyDiscountCode() {

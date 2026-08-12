@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { api } from "../api";
 import { formatRaceDate } from "../utils/dates";
-import { openBlobViewer } from "../utils/blobViewer";
+import MediaViewerModal from "./MediaViewerModal";
 
 function getTokenFromPath() {
   const match = window.location.pathname.match(/^\/validar-pago\/([^/]+)$/);
@@ -26,6 +26,7 @@ export default function PaymentReviewView() {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [mediaViewer, setMediaViewer] = useState(null);
 
   async function load() {
     setLoading(true);
@@ -82,7 +83,7 @@ export default function PaymentReviewView() {
     setError("");
     try {
       const result = await api.downloadRegistrationReviewPhoto(token, participantId);
-      openBlobViewer(result.blob, "Foto del participante");
+      setMediaViewer({ blob: result.blob, title: "Foto del participante", fileName: "foto-participante" });
     } catch (err) {
       setError(err.message || "No se pudo abrir la foto.");
     }
@@ -92,7 +93,11 @@ export default function PaymentReviewView() {
     setError("");
     try {
       const result = await api.downloadRegistrationReviewVoucher(token, voucher.id);
-      openBlobViewer(result.blob, result.fileName || `Voucher ${index + 1}`);
+      setMediaViewer({
+        blob: result.blob,
+        title: result.fileName || `Voucher ${index + 1}`,
+        fileName: result.fileName || `voucher-${index + 1}`,
+      });
     } catch (err) {
       setError(err.message || "No se pudo abrir el voucher.");
     }
@@ -171,6 +176,7 @@ export default function PaymentReviewView() {
             </button>
           </div>
         )}
+        <MediaViewerModal file={mediaViewer} onClose={() => setMediaViewer(null)} />
       </section>
     </div>
   );
