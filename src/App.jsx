@@ -34,9 +34,9 @@ function getTabs(role, raceStarted, raceClosed) {
   }
   if (role === "MASTER") {
     tabs.push({ id: "usuarios", label: "Usuarios" });
-    tabs.push({ id: "whatsapp", label: "WhatsApp" });
     tabs.push({ id: "configuracion", label: "Configuración" });
   }
+  tabs.push({ id: "whatsapp", label: "WhatsApp" });
   return tabs;
 }
 
@@ -748,6 +748,7 @@ export default function App() {
                 <Registrations
                   race={selectedRace}
                   raceId={selectedRaceId}
+                  currentUser={currentUser}
                   onApproved={fetchRace}
                 />
               )}
@@ -801,7 +802,7 @@ export default function App() {
                 />
               )}
               {activeTab === "usuarios" && currentUser.role === "MASTER" && <Users />}
-              {activeTab === "whatsapp" && currentUser.role === "MASTER" && <WhatsAppSettings />}
+              {activeTab === "whatsapp" && <WhatsAppSettings />}
               {activeTab === "configuracion" && currentUser.role === "MASTER" && (
                 <CategoryConfig
                   categories={categories}

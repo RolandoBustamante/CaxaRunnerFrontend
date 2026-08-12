@@ -27,13 +27,14 @@ function formatBirthDate(value) {
   return new Date(value).toLocaleDateString("es-PE", { timeZone: "UTC" });
 }
 
-export default function Registrations({ race, raceId, onApproved }) {
+export default function Registrations({ race, raceId, currentUser, onApproved }) {
   const [status, setStatus] = useState("PENDING");
   const [registrations, setRegistrations] = useState([]);
   const [loading, setLoading] = useState(false);
   const [busyId, setBusyId] = useState(null);
   const [message, setMessage] = useState("");
   const [mediaViewer, setMediaViewer] = useState(null);
+  const canDeleteRegistrations = currentUser?.role === "MASTER";
 
   const publicLink = useMemo(() => {
     if (!race?.slug) return "";
@@ -161,6 +162,7 @@ export default function Registrations({ race, raceId, onApproved }) {
   }
 
   async function deleteRegistration(registration) {
+    if (!canDeleteRegistrations) return;
     const ok = await confirmDialog({
       title: "Eliminar solicitud",
       text:
@@ -292,9 +294,11 @@ export default function Registrations({ race, raceId, onApproved }) {
                     Voucher {index + 1}
                   </button>
                 ))}
-                <button className="btn btn-danger btn-sm" onClick={() => deleteRegistration(registration)} disabled={busyId === registration.id}>
-                  {busyId === registration.id ? "Eliminando..." : "Eliminar solicitud"}
-                </button>
+                {canDeleteRegistrations && (
+                  <button className="btn btn-danger btn-sm" onClick={() => deleteRegistration(registration)} disabled={busyId === registration.id}>
+                    {busyId === registration.id ? "Eliminando..." : "Eliminar solicitud"}
+                  </button>
+                )}
               </div>
 
               {registration.status === "PENDING" && (
