@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { api } from "../api";
 import { formatRaceDate } from "../utils/dates";
+import { openBlobViewer } from "../utils/blobViewer";
 
 function getTokenFromPath() {
   const match = window.location.pathname.match(/^\/validar-pago\/([^/]+)$/);
@@ -77,6 +78,26 @@ export default function PaymentReviewView() {
     }
   }
 
+  async function openParticipantPhoto(participantId) {
+    setError("");
+    try {
+      const result = await api.downloadRegistrationReviewPhoto(token, participantId);
+      openBlobViewer(result.blob, "Foto del participante");
+    } catch (err) {
+      setError(err.message || "No se pudo abrir la foto.");
+    }
+  }
+
+  async function openVoucher(voucher, index) {
+    setError("");
+    try {
+      const result = await api.downloadRegistrationReviewVoucher(token, voucher.id);
+      openBlobViewer(result.blob, result.fileName || `Voucher ${index + 1}`);
+    } catch (err) {
+      setError(err.message || "No se pudo abrir el voucher.");
+    }
+  }
+
   if (loading) {
     return <div className="payment-review-page"><div className="registration-loading">Cargando revisión...</div></div>;
   }
@@ -116,9 +137,9 @@ export default function PaymentReviewView() {
                   <span>{participant.garmentType === "BIVIDI" ? "Bividi" : "Polo"} · Talla {participant.garmentSize}</span>
                   <span>{participant.procedencia}{participant.club ? ` · ${participant.club}` : ""}</span>
                   {participant.photo && (
-                    <a className="payment-photo-link" href={api.getRegistrationReviewPhotoUrl(token, participant.id)} target="_blank" rel="noreferrer">
+                    <button type="button" className="payment-photo-link" onClick={() => openParticipantPhoto(participant.id)}>
                       Ver foto
-                    </a>
+                    </button>
                   )}
                 </div>
               ))}
@@ -129,9 +150,9 @@ export default function PaymentReviewView() {
             <h2>Vouchers</h2>
             <div className="payment-voucher-list">
               {registration.vouchers.map((voucher, index) => (
-                <a key={voucher.id} href={api.getRegistrationReviewVoucherUrl(token, voucher.id)} target="_blank" rel="noreferrer">
+                <button key={voucher.id} type="button" onClick={() => openVoucher(voucher, index)}>
                   Ver voucher {index + 1}
-                </a>
+                </button>
               ))}
             </div>
           </section>

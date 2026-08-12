@@ -226,8 +226,12 @@ export const api = {
     }),
   getRegistrationReviewVoucherUrl: (token, voucherId) =>
     `${BASE}/registration-review/${encodeURIComponent(token)}/vouchers/${encodeURIComponent(voucherId)}`,
+  downloadRegistrationReviewVoucher: (token, voucherId) =>
+    requestBlob("GET", `/registration-review/${encodeURIComponent(token)}/vouchers/${encodeURIComponent(voucherId)}`),
   getRegistrationReviewPhotoUrl: (token, participantId) =>
     `${BASE}/registration-review/${encodeURIComponent(token)}/participants/${encodeURIComponent(participantId)}/photo`,
+  downloadRegistrationReviewPhoto: (token, participantId) =>
+    requestBlob("GET", `/registration-review/${encodeURIComponent(token)}/participants/${encodeURIComponent(participantId)}/photo`),
   getRegistrations: (raceId, status) => {
     const basePath = withRaceId("/registrations", raceId);
     const separator = basePath.includes("?") ? "&" : "?";

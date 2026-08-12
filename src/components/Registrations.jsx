@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { api } from "../api";
 import { confirmDialog, errorDialog } from "../utils/dialog";
+import { openBlobViewer } from "../utils/blobViewer";
 
 const STATUS_LABELS = {
   PENDING: "Pendientes",
@@ -92,9 +93,7 @@ export default function Registrations({ race, raceId, onApproved }) {
 
   async function openVoucher(registrationId, voucherId) {
     const result = await api.downloadRegistrationVoucher(registrationId, voucherId, raceId);
-    const url = URL.createObjectURL(result.blob);
-    window.open(url, "_blank", "noopener,noreferrer");
-    window.setTimeout(() => URL.revokeObjectURL(url), 30000);
+    openBlobViewer(result.blob, result.fileName || "Voucher");
   }
 
   async function resendPaymentAlert(registration) {
@@ -125,44 +124,7 @@ export default function Registrations({ race, raceId, onApproved }) {
 
   async function openParticipantPhoto(registrationId, participantId) {
     const result = await api.downloadRegistrationParticipantPhoto(registrationId, participantId, raceId);
-    const url = URL.createObjectURL(result.blob);
-    const viewer = window.open("", "_blank", "noopener,noreferrer");
-    if (!viewer) {
-      window.open(url, "_blank", "noopener,noreferrer");
-      window.setTimeout(() => URL.revokeObjectURL(url), 5 * 60 * 1000);
-      return;
-    }
-
-    const isImage = String(result.blob.type || "").startsWith("image/");
-    viewer.document.write(`
-      <!doctype html>
-      <html>
-        <head>
-          <meta charset="utf-8" />
-          <title>Foto del participante</title>
-          <style>
-            html, body { margin: 0; min-height: 100%; background: #f6f8fc; color: #111827; font-family: system-ui, sans-serif; }
-            body { display: grid; place-items: center; padding: 24px; box-sizing: border-box; }
-            .viewer { width: min(100%, 980px); display: grid; gap: 16px; }
-            .toolbar { display: flex; justify-content: space-between; gap: 12px; align-items: center; }
-            a { color: #003f8f; font-weight: 800; text-decoration: none; }
-            img { display: block; max-width: 100%; max-height: 82vh; margin: 0 auto; object-fit: contain; background: white; border: 1px solid #d7dfef; border-radius: 8px; }
-            .fallback { padding: 20px; background: white; border: 1px solid #d7dfef; border-radius: 8px; }
-          </style>
-        </head>
-        <body>
-          <main class="viewer">
-            <div class="toolbar">
-              <strong>Foto del participante</strong>
-              <a href="${url}" download>Descargar</a>
-            </div>
-            ${isImage ? `<img src="${url}" alt="Foto del participante" />` : `<div class="fallback">No se pudo previsualizar este archivo. Usa descargar para abrirlo.</div>`}
-          </main>
-        </body>
-      </html>
-    `);
-    viewer.document.close();
-    window.setTimeout(() => URL.revokeObjectURL(url), 5 * 60 * 1000);
+    openBlobViewer(result.blob, "Foto del participante");
   }
 
   async function approve(id) {
