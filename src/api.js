@@ -258,6 +258,8 @@ export const api = {
   getWhatsAppStatus: () => request("GET", "/whatsapp/status"),
   restartWhatsApp: () => request("POST", "/whatsapp/restart"),
   logoutWhatsApp: () => request("POST", "/whatsapp/logout"),
+  requestWhatsAppPairingCode: (phoneNumber) => request("POST", "/whatsapp/pairing-code", { phoneNumber }),
+  cancelWhatsAppPairingCode: () => request("POST", "/whatsapp/pairing-code/cancel"),
   sendWhatsAppTest: (number, message) => request("POST", "/whatsapp/test", { number, message }),
   approveRegistration: (id, raceId) =>
     request("POST", `/registrations/${idToPath(id)}/approve`, raceId == null ? undefined : { raceId }),

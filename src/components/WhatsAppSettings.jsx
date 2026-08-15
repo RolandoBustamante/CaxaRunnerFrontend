@@ -6,8 +6,10 @@ export default function WhatsAppSettings() {
   const [status, setStatus] = useState({ loggedIn: false, qr: null, state: null });
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
+  const [pairingBusy, setPairingBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [testNumber, setTestNumber] = useState("");
+  const [pairingPhone, setPairingPhone] = useState("");
 
   async function loadStatus() {
     setLoading(true);
@@ -78,17 +80,53 @@ export default function WhatsAppSettings() {
     }
   }
 
+  async function generatePairingCode() {
+    if (!pairingPhone.trim()) {
+      setMessage("Ingresa el numero que quieres vincular.");
+      return;
+    }
+
+    setPairingBusy(true);
+    setMessage("Generando codigo de vinculacion...");
+    try {
+      const result = await api.requestWhatsAppPairingCode(pairingPhone);
+      if (result.status) setStatus(result.status);
+      else await loadStatus();
+      setMessage("Codigo generado. Abre WhatsApp en el telefono y vincula el dispositivo con ese codigo.");
+    } catch (err) {
+      setMessage(err.message || "No se pudo generar el codigo. Usa el QR como respaldo.");
+      await loadStatus();
+    } finally {
+      setPairingBusy(false);
+    }
+  }
+
+  async function cancelPairingCode() {
+    setPairingBusy(true);
+    setMessage("");
+    try {
+      const result = await api.cancelWhatsAppPairingCode();
+      if (result.status) setStatus(result.status);
+      else await loadStatus();
+      setMessage("Codigo cancelado. Puedes usar QR o generar uno nuevo.");
+    } catch (err) {
+      setMessage(err.message || "No se pudo cancelar el codigo.");
+    } finally {
+      setPairingBusy(false);
+    }
+  }
+
   useEffect(() => {
     loadStatus();
   }, []);
 
   useEffect(() => {
-    if (!status.loggedIn || status.isReady) return undefined;
+    if ((status.loggedIn && status.isReady) || (!status.loggedIn && !status.pairingCode && !status.pairingPhone)) return undefined;
     const interval = window.setInterval(() => {
       api.getWhatsAppStatus().then(setStatus).catch(() => {});
     }, 4000);
     return () => window.clearInterval(interval);
-  }, [status.loggedIn, status.isReady]);
+  }, [status.loggedIn, status.isReady, status.pairingCode, status.pairingPhone]);
 
   return (
     <div className="whatsapp-settings">
@@ -123,6 +161,39 @@ export default function WhatsAppSettings() {
             <p className="text-muted">QR no disponible todavia. Usa reiniciar o actualizar.</p>
           )}
         </div>
+
+        {!status.loggedIn && (
+          <div className="whatsapp-pairing-card">
+            <div>
+              <h3>Vincular con numero</h3>
+              <p className="text-muted">Alternativa al QR. Usa formato peruano de 9 digitos o internacional sin +.</p>
+            </div>
+            <div className="whatsapp-test-row">
+              <input
+                className="login-input"
+                value={pairingPhone}
+                onChange={(event) => setPairingPhone(event.target.value)}
+                placeholder="Ej: 941809057"
+              />
+              <button className="btn btn-secondary" onClick={generatePairingCode} disabled={pairingBusy || loading}>
+                {pairingBusy ? "Generando..." : "Generar codigo"}
+              </button>
+            </div>
+            {status.pairingCode && (
+              <div className="whatsapp-pairing-code">
+                <span>Codigo de vinculacion</span>
+                <strong>{status.pairingCode}</strong>
+                <small>En WhatsApp: Dispositivos vinculados &gt; Vincular con numero de telefono.</small>
+              </div>
+            )}
+            {status.pairingError && <div className="registration-error-card">{status.pairingError}</div>}
+            {(status.pairingCode || status.pairingPhone) && (
+              <button className="btn btn-secondary" onClick={cancelPairingCode} disabled={pairingBusy}>
+                Cancelar codigo y volver a QR
+              </button>
+            )}
+          </div>
+        )}
 
         <div className="whatsapp-actions">
           <button className="btn btn-primary" onClick={restart} disabled={loading}>
