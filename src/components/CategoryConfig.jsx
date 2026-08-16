@@ -43,19 +43,38 @@ function parsePricesText(value) {
     .filter((item) => item.distance && Number.isFinite(item.price) && item.price >= 0);
 }
 
-function phonesToText(phones) {
-  return Array.isArray(phones) ? phones.join("\n") : "";
+function normalizeNotificationContacts(value) {
+  if (!Array.isArray(value) || value.length === 0) return [{ name: "", phone: "" }];
+  return value.map((item) => {
+    if (typeof item === "object" && item !== null) {
+      return {
+        name: String(item.name || "").trim(),
+        phone: String(item.phone || "").replace(/\D/g, ""),
+      };
+    }
+    return {
+      name: "",
+      phone: String(item || "").replace(/\D/g, ""),
+    };
+  });
 }
 
-function parsePhonesText(value) {
-  return [
-    ...new Set(
-      String(value || "")
-        .split(/[\n,;]/)
-        .map((phone) => phone.replace(/\D/g, ""))
-        .filter((phone) => phone.length >= 9)
-    ),
-  ];
+function compactNotificationContacts(value) {
+  const seen = new Set();
+  return value
+    .map((item) => ({
+      name: String(item.name || "").trim(),
+      phone: String(item.phone || "").replace(/\D/g, ""),
+    }))
+    .filter((item) => {
+      if (item.phone.length < 9 || seen.has(item.phone)) return false;
+      seen.add(item.phone);
+      return true;
+    });
+}
+
+function emptyNotificationContact() {
+  return { name: "", phone: "" };
 }
 
 function emptyBankAccount() {
@@ -131,7 +150,8 @@ export default function CategoryConfig({
   const [discountsEnabled, setDiscountsEnabled] = useState(race?.discountsEnabled === true);
   const [registrationPricesText, setRegistrationPricesText] = useState(pricesToText(race?.registrationPrices));
   const [registrationInstructions, setRegistrationInstructions] = useState(race?.registrationInstructions || "");
-  const [registrationNotificationPhonesText, setRegistrationNotificationPhonesText] = useState(phonesToText(race?.registrationNotificationPhones));
+  const [registrationNotificationContacts, setRegistrationNotificationContacts] = useState(() => normalizeNotificationContacts(race?.registrationNotificationPhones));
+  const [whatsappContactPrefix, setWhatsappContactPrefix] = useState(race?.whatsappContactPrefix || "MM-");
   const [paymentMethods, setPaymentMethods] = useState(() => normalizePaymentMethods(race?.registrationPaymentMethods));
   const [uploadingQr, setUploadingQr] = useState(null);
   const [uploadingRaceAsset, setUploadingRaceAsset] = useState("");
@@ -156,10 +176,11 @@ export default function CategoryConfig({
     setDiscountsEnabled(race?.discountsEnabled === true);
     setRegistrationPricesText(pricesToText(race?.registrationPrices));
     setRegistrationInstructions(race?.registrationInstructions || "");
-    setRegistrationNotificationPhonesText(phonesToText(race?.registrationNotificationPhones));
+    setRegistrationNotificationContacts(normalizeNotificationContacts(race?.registrationNotificationPhones));
+    setWhatsappContactPrefix(race?.whatsappContactPrefix || "MM-");
     setPaymentMethods(normalizePaymentMethods(race?.registrationPaymentMethods));
     setMsg(null);
-  }, [categories, race?.certificateTemplate, race?.certificatesEnabled, race?.discountsEnabled, race?.distances, race?.eventDate, race?.publicNotice, race?.registrationInstructions, race?.registrationNotificationPhones, race?.registrationPaymentMethods, race?.registrationPrices, race?.registrationsEnabled, race?.showDorsalPublic]);
+  }, [categories, race?.certificateTemplate, race?.certificatesEnabled, race?.discountsEnabled, race?.distances, race?.eventDate, race?.publicNotice, race?.registrationInstructions, race?.registrationNotificationPhones, race?.registrationPaymentMethods, race?.registrationPrices, race?.registrationsEnabled, race?.showDorsalPublic, race?.whatsappContactPrefix]);
 
   async function loadDiscountCodes() {
     if (!raceId) return;
@@ -239,6 +260,27 @@ export default function CategoryConfig({
         ? prev.digitalWallets.filter((_, itemIndex) => itemIndex !== index)
         : [emptyDigitalWallet()],
     }));
+    setMsg(null);
+  }
+
+  function updateNotificationContact(index, field, value) {
+    setRegistrationNotificationContacts((prev) => (
+      prev.map((item, itemIndex) => (
+        itemIndex === index ? { ...item, [field]: value } : item
+      ))
+    ));
+    setMsg(null);
+  }
+
+  function addNotificationContact() {
+    setRegistrationNotificationContacts((prev) => [...prev, emptyNotificationContact()]);
+    setMsg(null);
+  }
+
+  function removeNotificationContact(index) {
+    setRegistrationNotificationContacts((prev) => (
+      prev.length > 1 ? prev.filter((_, itemIndex) => itemIndex !== index) : [emptyNotificationContact()]
+    ));
     setMsg(null);
   }
 
@@ -422,7 +464,8 @@ export default function CategoryConfig({
         discountsEnabled,
         registrationPrices: parsePricesText(registrationPricesText),
         registrationInstructions: registrationInstructions.trim() || null,
-        registrationNotificationPhones: parsePhonesText(registrationNotificationPhonesText),
+        registrationNotificationPhones: compactNotificationContacts(registrationNotificationContacts),
+        whatsappContactPrefix: whatsappContactPrefix.trim() || "MM-",
         registrationPaymentMethods: compactPaymentMethods(paymentMethods),
       });
       setMsg({ type: "ok", text: "Datos de la carrera guardados." });
@@ -776,18 +819,55 @@ export default function CategoryConfig({
                 </div>
               </div>
             </div>
-            <label className="config-notice-field">
-              <span>Contactos de aviso para validar pagos</span>
-              <textarea
-                className="config-input config-notice-textarea"
-                rows="4"
-                value={registrationNotificationPhonesText}
+            <div className="notification-contacts-config">
+              <div className="payment-methods-head">
+                <div>
+                  <span>Contactos de aviso para validar pagos</span>
+                  <small>Nombre y numero que recibiran la alerta por WhatsApp.</small>
+                </div>
+                <button type="button" className="btn btn-secondary btn-sm" onClick={addNotificationContact}>
+                  + Agregar contacto
+                </button>
+              </div>
+              {registrationNotificationContacts.map((contact, index) => (
+                <div key={index} className="notification-contact-row">
+                  <label>
+                    <span>Nombre</span>
+                    <input
+                      className="config-input"
+                      value={contact.name}
+                      onChange={(event) => updateNotificationContact(index, "name", event.target.value)}
+                      placeholder={`Validador ${index + 1}`}
+                    />
+                  </label>
+                  <label>
+                    <span>Numero</span>
+                    <input
+                      className="config-input"
+                      value={contact.phone}
+                      onChange={(event) => updateNotificationContact(index, "phone", event.target.value)}
+                      placeholder="999888777"
+                    />
+                  </label>
+                  <button type="button" className="btn btn-danger btn-sm" onClick={() => removeNotificationContact(index)}>
+                    Quitar
+                  </button>
+                </div>
+              ))}
+            </div>
+            <label className="config-date-field config-distances-field">
+              <span>Prefijo para contactos WhatsApp</span>
+              <input
+                className="config-input"
+                type="text"
+                value={whatsappContactPrefix}
                 onChange={(event) => {
-                  setRegistrationNotificationPhonesText(event.target.value);
+                  setWhatsappContactPrefix(event.target.value);
                   setMsg(null);
                 }}
-                placeholder={"Ej:\n999888777\n933631263"}
+                placeholder="Ej: MM-"
               />
+              <small className="config-field-help">Se usara al guardar contactos, por ejemplo MM-Rolando Bustamante.</small>
             </label>
             <button className="btn btn-secondary" onClick={handleSaveRaceInfo} disabled={busy}>
               Guardar datos
