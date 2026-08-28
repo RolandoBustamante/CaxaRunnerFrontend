@@ -5545,11 +5545,39 @@ button:disabled {
   margin-top: 0.85rem;
 }
 
+.registration-discount-box label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  color: #111c2c;
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
 .registration-discount-input {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 0.5rem;
   margin-top: 0.35rem;
+}
+
+.registration-discount-input input {
+  width: 100%;
+  min-height: 2.85rem;
+  border: 1px solid #c4c6d2;
+  border-radius: 0.25rem;
+  background: #ffffff;
+  color: #111c2c;
+  padding: 0.65rem 0.75rem;
+  font: inherit;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.registration-discount-input input:focus {
+  outline: none;
+  border-color: #115cb9;
+  box-shadow: 0 0 0 3px rgba(17, 92, 185, 0.14);
 }
 
 .config-discounts-panel {

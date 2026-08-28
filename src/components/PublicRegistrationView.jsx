@@ -290,14 +290,19 @@ export default function PublicRegistrationView() {
 
     setDiscountMessage("");
     try {
-      const data = await api.validateDiscountCode(slug, code, total);
+      const data = await api.validateDiscountCode(slug, code, total, participants.length);
       setAppliedDiscount({
         code: data.discountCode.code,
+        discountType: data.discountCode.discountType,
         percent: data.discountCode.percent,
+        amountPerParticipant: data.discountCode.amountPerParticipant,
         discountAmount: data.discountAmount || 0,
       });
       setDiscountCodeInput(data.discountCode.code);
-      setDiscountMessage(`Descuento aplicado: ${Number(data.discountCode.percent).toFixed(2)}%`);
+      const discountLabel = data.discountCode.discountType === "FIXED_PER_PARTICIPANT"
+        ? `S/ ${Number(data.discountCode.amountPerParticipant || 0).toFixed(2)} por participante`
+        : `${Number(data.discountCode.percent).toFixed(2)}%`;
+      setDiscountMessage(`Descuento aplicado: ${discountLabel} para ${participants.length} participante(s).`);
     } catch (err) {
       setAppliedDiscount(null);
       setDiscountMessage(err.message || "Codigo no valido.");

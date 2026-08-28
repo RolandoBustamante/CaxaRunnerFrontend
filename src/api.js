@@ -197,11 +197,11 @@ export const api = {
       if (!res.ok) throw new Error(data.error || "Error al obtener formulario de inscripción");
       return data;
     }),
-  validateDiscountCode: (slug, code, subtotalAmount) =>
+  validateDiscountCode: (slug, code, subtotalAmount, participantCount = 1) =>
     fetch(`${BASE}/public/${encodeURIComponent(slug)}/discount-code`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ code, subtotalAmount }),
+      body: JSON.stringify({ code, subtotalAmount, participantCount }),
     }).then(async (res) => {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Error al validar descuento");

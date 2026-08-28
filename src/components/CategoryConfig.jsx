@@ -120,7 +120,14 @@ function compactPaymentMethods(value) {
 }
 
 function emptyDiscountForm() {
-  return { code: "", percent: "", maxUses: "", validUntil: "", active: true };
+  return { code: "", discountType: "PERCENT", percent: "", amountPerParticipant: "", maxUses: "", validUntil: "", active: true };
+}
+
+function getDiscountDescription(discountCode) {
+  if (discountCode.discountType === "FIXED_PER_PARTICIPANT") {
+    return `S/ ${Number(discountCode.amountPerParticipant || 0).toFixed(2)} por corredor`;
+  }
+  return `${Number(discountCode.percent || 0).toFixed(2)}%`;
 }
 
 function formatDiscountDate(value) {
@@ -481,15 +488,21 @@ export default function CategoryConfig({
     event.preventDefault();
     if (!raceId) return;
     const code = discountForm.code.trim().toUpperCase().replace(/\s+/g, "");
-    const percent = Number(discountForm.percent);
+    const discountType = discountForm.discountType === "FIXED_PER_PARTICIPANT" ? "FIXED_PER_PARTICIPANT" : "PERCENT";
+    const percent = discountType === "PERCENT" ? Number(discountForm.percent) : 0;
+    const amountPerParticipant = discountType === "FIXED_PER_PARTICIPANT" ? Number(discountForm.amountPerParticipant) : null;
     const maxUses = discountForm.maxUses === "" ? null : Number.parseInt(discountForm.maxUses, 10);
 
     if (!code) {
       setMsg({ type: "error", text: "Ingresa el codigo de descuento." });
       return;
     }
-    if (!Number.isFinite(percent) || percent <= 0 || percent > 100) {
+    if (discountType === "PERCENT" && (!Number.isFinite(percent) || percent <= 0 || percent > 100)) {
       setMsg({ type: "error", text: "El porcentaje debe estar entre 1 y 100." });
+      return;
+    }
+    if (discountType === "FIXED_PER_PARTICIPANT" && (!Number.isFinite(amountPerParticipant) || amountPerParticipant <= 0)) {
+      setMsg({ type: "error", text: "El monto fijo por corredor debe ser mayor a 0." });
       return;
     }
     if (maxUses !== null && (!Number.isFinite(maxUses) || maxUses <= 0)) {
@@ -501,7 +514,9 @@ export default function CategoryConfig({
     try {
       await api.createDiscountCode({
         code,
+        discountType,
         percent,
+        amountPerParticipant,
         maxUses,
         validUntil: discountForm.validUntil || null,
         active: discountForm.active,
@@ -904,18 +919,44 @@ export default function CategoryConfig({
             />
           </label>
           <label>
-            <span>Descuento %</span>
-            <input
+            <span>Tipo</span>
+            <select
               className="config-input"
-              type="number"
-              min="1"
-              max="100"
-              step="0.01"
-              value={discountForm.percent}
-              onChange={(event) => setDiscountForm((prev) => ({ ...prev, percent: event.target.value }))}
-              placeholder="20"
-            />
+              value={discountForm.discountType}
+              onChange={(event) => setDiscountForm((prev) => ({ ...prev, discountType: event.target.value }))}
+            >
+              <option value="PERCENT">Porcentaje</option>
+              <option value="FIXED_PER_PARTICIPANT">Monto por corredor</option>
+            </select>
           </label>
+          {discountForm.discountType === "FIXED_PER_PARTICIPANT" ? (
+            <label>
+              <span>Monto por corredor</span>
+              <input
+                className="config-input"
+                type="number"
+                min="0.01"
+                step="0.01"
+                value={discountForm.amountPerParticipant}
+                onChange={(event) => setDiscountForm((prev) => ({ ...prev, amountPerParticipant: event.target.value }))}
+                placeholder="10"
+              />
+            </label>
+          ) : (
+            <label>
+              <span>Descuento %</span>
+              <input
+                className="config-input"
+                type="number"
+                min="1"
+                max="100"
+                step="0.01"
+                value={discountForm.percent}
+                onChange={(event) => setDiscountForm((prev) => ({ ...prev, percent: event.target.value }))}
+                placeholder="20"
+              />
+            </label>
+          )}
           <label>
             <span>Limite de usos</span>
             <input
@@ -954,7 +995,7 @@ export default function CategoryConfig({
             <div key={discountCode.id} className="config-discount-row">
               <div>
                 <strong>{discountCode.code}</strong>
-                <span>{Number(discountCode.percent).toFixed(2)}% · {discountCode.usedCount}/{discountCode.maxUses ?? "sin limite"} usados · {formatDiscountDate(discountCode.validUntil)}</span>
+                <span>{getDiscountDescription(discountCode)} · {discountCode.usedCount}/{discountCode.maxUses ?? "sin limite"} corredores · {formatDiscountDate(discountCode.validUntil)}</span>
               </div>
               <button className="btn btn-secondary btn-sm" onClick={() => toggleDiscountCode(discountCode)} disabled={busy}>
                 {discountCode.active ? "Desactivar" : "Activar"}
