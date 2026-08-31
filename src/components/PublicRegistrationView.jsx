@@ -20,7 +20,8 @@ const EMPTY_PARTICIPANT = {
   emergencyPhone: "",
 };
 
-const BLOOD_TYPES = ["O+", "O-", "A+", "A-", "B+", "B-", "AB+", "AB-"];
+// ponytail: "RH+"/"RH-" para quien no sabe su grupo ABO
+const BLOOD_TYPES = ["O+", "O-", "A+", "A-", "B+", "B-", "AB+", "AB-", "RH+", "RH-"];
 const GARMENT_SIZES = ["XS", "S", "M", "L", "XL", "XXL"];
 
 function getSlugFromPath() {
