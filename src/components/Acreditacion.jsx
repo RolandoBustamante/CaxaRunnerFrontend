@@ -9,6 +9,8 @@ function extractReniecName(data) {
   return data.datos || null;
 }
 
+const PAGE_SIZE = 25;
+
 const EMPTY_FORM = { documento: "", nombre: "", edad: "", genero: "M", distancia: "10K", dorsal: "" };
 
 function participantToEditForm(participant) {
@@ -203,6 +205,8 @@ export default function Acreditacion({ participants, categories = DEFAULT_CATEGO
   const [searchResults, setSearchResults] = useState([]);
   const [searching, setSearching] = useState(false);
   const [tableFilter, setTableFilter] = useState("todos");
+  // La tabla rinde de a tandas: con 500 inscritos el movil se arrastraba.
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [editingDorsalId, setEditingDorsalId] = useState(null);
   const [editingDorsalValue, setEditingDorsalValue] = useState("");
   const [editingDorsalError, setEditingDorsalError] = useState("");
@@ -354,6 +358,13 @@ export default function Acreditacion({ participants, categories = DEFAULT_CATEGO
     if (tableFilter === "sin-carta") return !p.cartaFirmada;
     return true;
   });
+
+  const visibleParticipants = filteredParticipants.slice(0, visibleCount);
+  const restantes = filteredParticipants.length - visibleParticipants.length;
+
+  useEffect(() => {
+    setVisibleCount(PAGE_SIZE);
+  }, [tableFilter]);
 
   const startEditDorsal = (p) => {
     setEditingDorsalId(p.id);
@@ -760,7 +771,7 @@ export default function Acreditacion({ participants, categories = DEFAULT_CATEGO
                 </tr>
               </thead>
               <tbody>
-                {filteredParticipants.map((p) => {
+                {visibleParticipants.map((p) => {
                   const category = getCategory(p.edad, p.genero, p.distancia, categories);
                   const isEditingParticipant = false;
                   return (
@@ -897,6 +908,29 @@ export default function Acreditacion({ participants, categories = DEFAULT_CATEGO
                 })}
               </tbody>
             </table>
+            {restantes > 0 && (
+              <div className="acred-show-more">
+                <span className="text-muted">
+                  Mostrando {visibleParticipants.length} de {filteredParticipants.length}
+                </span>
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => setVisibleCount((n) => n + PAGE_SIZE)}
+                >
+                  Mostrar {Math.min(PAGE_SIZE, restantes)} más
+                </button>
+                {restantes > PAGE_SIZE && (
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={() => setVisibleCount(filteredParticipants.length)}
+                  >
+                    Ver todos ({filteredParticipants.length})
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         )}
       </div>

@@ -11,6 +11,8 @@ function extractReniecName(data) {
 
 const PARTICIPANT_REQUIRED_FIELDS = ["documento", "nombre", "edad", "genero", "distancia"];
 const DORSAL_REQUIRED_FIELDS = ["documento", "dorsal"];
+const PAGE_SIZE = 25;
+
 const EMPTY_FORM = { documento: "", nombre: "", edad: "", genero: "M", distancia: "", dorsal: "" };
 
 function normalizeKey(key) {
@@ -84,6 +86,8 @@ export default function ParticipantUpload({
   const [excelBusy, setExcelBusy] = useState(false);
   const [excelSuccess, setExcelSuccess] = useState("");
   const [deletingParticipantId, setDeletingParticipantId] = useState(null);
+  // Rinde de a tandas: antes cortaba en 50 y el resto no habia forma de verlo.
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const fileInputRef = useRef(null);
 
   const resetExcelState = useCallback(() => {
@@ -591,7 +595,7 @@ export default function ParticipantUpload({
                 </tr>
               </thead>
               <tbody>
-                {participants.slice(0, 50).map((participant, index) => (
+                {participants.slice(0, visibleCount).map((participant, index) => (
                   <tr key={(participant.documento || participant.id || index) + index}>
                     <td className="text-muted">{index + 1}</td>
                     <td className="acred-table-doc">{participant.documento}</td>
@@ -626,15 +630,31 @@ export default function ParticipantUpload({
                     </td>
                   </tr>
                 ))}
-                {participants.length > 50 && (
-                  <tr>
-                    <td colSpan={8} className="text-muted text-center">
-                      ... y {participants.length - 50} mas
-                    </td>
-                  </tr>
-                )}
               </tbody>
             </table>
+            {participants.length > visibleCount && (
+              <div className="acred-show-more">
+                <span className="text-muted">
+                  Mostrando {visibleCount} de {participants.length}
+                </span>
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => setVisibleCount((n) => n + PAGE_SIZE)}
+                >
+                  Mostrar {Math.min(PAGE_SIZE, participants.length - visibleCount)} más
+                </button>
+                {participants.length - visibleCount > PAGE_SIZE && (
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={() => setVisibleCount(participants.length)}
+                  >
+                    Ver todos ({participants.length})
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         </div>
       )}

@@ -563,6 +563,9 @@ export default function CategoryConfig({
             </span>
           </div>
           <div className="config-race-actions">
+            <details className="config-accordion" open>
+              <summary>Datos de la carrera</summary>
+              <div className="config-accordion-body">
             <label className="config-date-field">
               <span>Fecha de carrera</span>
               <input
@@ -601,6 +604,11 @@ export default function CategoryConfig({
                 placeholder="Ej: 5K, 10K"
               />
             </label>
+              </div>
+            </details>
+            <details className="config-accordion">
+              <summary>Resultados y certificados</summary>
+              <div className="config-accordion-body">
             <label className="config-checkbox-field">
               <input
                 type="checkbox"
@@ -638,6 +646,11 @@ export default function CategoryConfig({
                 <option value="trail">Trail verde</option>
               </select>
             </label>
+              </div>
+            </details>
+            <details className="config-accordion">
+              <summary>Inscripciones</summary>
+              <div className="config-accordion-body">
             <label className="config-checkbox-field">
               <input
                 type="checkbox"
@@ -688,6 +701,11 @@ export default function CategoryConfig({
                 placeholder="Ej: Yape/Plin 999 999 999 a nombre de Cajamarca Runners. Adjunta tu voucher legible."
               />
             </label>
+              </div>
+            </details>
+            <details className="config-accordion">
+              <summary>Métodos de pago</summary>
+              <div className="config-accordion-body">
             <div className="payment-methods-config">
               <div className="payment-methods-section">
                 <div className="payment-methods-head">
@@ -789,6 +807,11 @@ export default function CategoryConfig({
                 ))}
               </div>
             </div>
+              </div>
+            </details>
+            <details className="config-accordion">
+              <summary>Archivos de la carrera</summary>
+              <div className="config-accordion-body">
             <div className="race-assets-config">
               <div className="race-asset-card">
                 <div>
@@ -834,6 +857,11 @@ export default function CategoryConfig({
                 </div>
               </div>
             </div>
+              </div>
+            </details>
+            <details className="config-accordion">
+              <summary>Avisos por WhatsApp</summary>
+              <div className="config-accordion-body">
             <div className="notification-contacts-config">
               <div className="payment-methods-head">
                 <div>
@@ -884,6 +912,8 @@ export default function CategoryConfig({
               />
               <small className="config-field-help">Se usara al guardar contactos, por ejemplo MM-Rolando Bustamante.</small>
             </label>
+              </div>
+            </details>
             <button className="btn btn-secondary" onClick={handleSaveRaceInfo} disabled={busy}>
               Guardar datos
             </button>

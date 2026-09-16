@@ -7125,3 +7125,82 @@ button:disabled {
   .acred-show-more { flex-direction: column; }
   .acred-show-more .btn { width: 100%; justify-content: center; }
 }
+
+/* =========================================================
+   Acordeones de Configuracion (details/summary nativos)
+   ========================================================= */
+.config-accordion {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--bg-card);
+  overflow: hidden;
+}
+
+.config-accordion > summary {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.85rem 1rem;
+  min-height: 48px;
+  font-weight: 700;
+  font-size: 0.92rem;
+  color: var(--text-primary);
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+}
+
+.config-accordion > summary::-webkit-details-marker { display: none; }
+
+.config-accordion > summary::before {
+  content: "›";
+  display: inline-block;
+  font-size: 1.25rem;
+  line-height: 1;
+  color: var(--text-muted);
+  transition: transform 0.15s ease;
+}
+
+.config-accordion[open] > summary::before { transform: rotate(90deg); }
+
+.config-accordion[open] > summary {
+  border-bottom: 1px solid var(--border);
+}
+
+.config-accordion > summary:hover { background: var(--bg-hover); }
+
+/* Los campos recuperan la grilla que tenian antes de entrar al acordeon */
+.config-accordion-body {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  align-items: end;
+  gap: 0.9rem;
+  padding: 0.9rem 1rem;
+}
+
+/* El contenedor es flex-wrap: cada acordeon toma una fila entera */
+.config-race-actions > .config-accordion {
+  flex: 1 0 100%;
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 760px) {
+  .config-accordion-body { grid-template-columns: minmax(0, 1fr); }
+}
+
+@media (max-width: 760px) {
+  /* Era fila incluso en movil: los campos quedaban en 230px */
+  .config-race-banner {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .config-race-info { width: 100%; }
+
+  .config-race-actions {
+    width: 100%;
+    align-items: stretch;
+  }
+
+  .config-accordion { width: 100%; }
+}
