@@ -5,6 +5,7 @@ import { errorDialog } from "../utils/dialog";
 const CARD_WIDTH = 1080;
 const CARD_HEIGHT = 1350;
 const DEFAULT_FRAME = { zoom: 118, focusX: 50, focusY: 42 };
+const NUDGE_STEP = 3;
 
 function normalize(value) {
   return String(value || "")
@@ -147,6 +148,8 @@ export default function Bienvenida({ raceId }) {
     frameRef.current = { ...frameRef.current, zoom: value };
     postToCard({ type: "welcome-zoom", zoom: value });
   };
+
+  const handleNudge = (dx, dy) => postToCard({ type: "welcome-nudge", dx: dx * NUDGE_STEP, dy: dy * NUDGE_STEP });
 
   const handleReset = () => {
     if (!selected) return;
@@ -306,8 +309,18 @@ export default function Bienvenida({ raceId }) {
                   />
                 </label>
 
+                <div className="welcome-nudge">
+                  <span>Mover la foto</span>
+                  <div className="welcome-pad">
+                    <button type="button" onClick={() => handleNudge(0, -1)} disabled={necesitaFoto} title="Arriba">↑</button>
+                    <button type="button" onClick={() => handleNudge(-1, 0)} disabled={necesitaFoto} title="Izquierda">←</button>
+                    <button type="button" onClick={() => handleNudge(1, 0)} disabled={necesitaFoto} title="Derecha">→</button>
+                    <button type="button" onClick={() => handleNudge(0, 1)} disabled={necesitaFoto} title="Abajo">↓</button>
+                  </div>
+                </div>
+
                 <p className="text-muted welcome-hint">
-                  Arrastrá la foto dentro del círculo para encuadrarla.
+                  También podés arrastrar la foto dentro del círculo.
                 </p>
 
                 <div className="welcome-actions">
