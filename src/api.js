@@ -288,6 +288,13 @@ export const api = {
   toggleKit: (id, raceId) => request("POST", `/participants/${id}/kit`, raceId == null ? undefined : { raceId }),
   toggleCarta: (id, raceId) => request("POST", `/participants/${id}/carta`, raceId == null ? undefined : { raceId }),
 
+  getWelcomeParticipants: (raceId) => request("GET", withRaceId("/welcome/participants", raceId)),
+  renderWelcomeCard: (payload) => request("POST", "/welcome/render", payload),
+  downloadWelcomeCard: async (payload) => {
+    const result = await requestBlob("POST", "/welcome/render", { ...payload, format: "png" });
+    return { ...result, fileName: ensureExtension(result.fileName, ".png") };
+  },
+
   getCategories: (raceId) => request("GET", withRaceId("/config/categories", raceId)),
   saveCategories: (categories, raceId) => request("PUT", "/config/categories", { categories, raceId }),
 

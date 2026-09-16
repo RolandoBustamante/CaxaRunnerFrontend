@@ -4,6 +4,7 @@ import FinishLine from "./components/FinishLine";
 import Results from "./components/Results";
 import Acreditacion from "./components/Acreditacion";
 import Registrations from "./components/Registrations";
+import Bienvenida from "./components/Bienvenida";
 import Login from "./components/Login";
 import Users from "./components/Users";
 import CronometroTab from "./components/CronometroTab";
@@ -25,6 +26,7 @@ function getTabs(role, raceStarted, raceClosed) {
   const tabs = [
     { id: "participantes", label: "Participantes" },
     { id: "inscripciones", label: "Inscripciones" },
+    { id: "bienvenida", label: "Bienvenida" },
     { id: "acreditacion", label: "Acreditación" },
     { id: "meta", label: "Meta" },
     { id: "resultados", label: "Resultados" },
@@ -752,6 +754,7 @@ export default function App() {
                   onApproved={fetchRace}
                 />
               )}
+              {activeTab === "bienvenida" && <Bienvenida raceId={selectedRaceId} />}
               {activeTab === "acreditacion" && (
                 <Acreditacion
                   participants={participants}
