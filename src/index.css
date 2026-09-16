@@ -281,6 +281,7 @@ a {
 }
 
 .app-sidebar-card {
+  min-width: 0;
   background: var(--bg-surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
@@ -1216,7 +1217,7 @@ button:disabled {
 
 @media (max-width: 1024px) {
   .finish-main-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
@@ -2423,11 +2424,12 @@ button:disabled {
   /* Main */
   .main-content { padding: 0.75rem; }
   .app-shell {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     gap: 0.75rem;
   }
   .app-sidebar {
     position: static;
+    min-width: 0;
   }
   .app-sidebar-card {
     padding: 0.55rem;
@@ -2569,7 +2571,7 @@ button:disabled {
   /* Cronómetro más compacto */
   .race-clock { font-size: 3rem; }
   .race-clock-wrapper { padding: 1rem; }
-  .finish-main-grid { grid-template-columns: 1fr; gap: 0.75rem; }
+  .finish-main-grid { grid-template-columns: minmax(0, 1fr); gap: 0.75rem; }
 
   /* Numpad ocupa todo el ancho, teclas más altas */
   .numpad { gap: 0.4rem; }
@@ -2635,7 +2637,7 @@ button:disabled {
   .acred-container { gap: 1rem; }
   .acred-section { padding: 0; }
   .acred-card-identity {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
   .acred-card-identity > .btn {
     width: 100%;
@@ -3041,7 +3043,7 @@ button:disabled {
 }
 
 @media (max-width: 600px) {
-  .users-grid { grid-template-columns: 1fr; }
+  .users-grid { grid-template-columns: minmax(0, 1fr); }
   .navbar-username { display: none; }
 }
 
@@ -3345,7 +3347,7 @@ button:disabled {
   .race-clock-wrapper { padding: 0.5rem 1rem; }
   .numpad-key { padding: 0.6rem 0; font-size: 1.3rem; }
   .finish-active { gap: 0.5rem; }
-  .finish-main-grid { grid-template-columns: 1fr; }
+  .finish-main-grid { grid-template-columns: minmax(0, 1fr); }
 }
 
 /* =========================================================
@@ -4518,7 +4520,7 @@ button:disabled {
   }
 
   .users-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .users-table {
@@ -4579,7 +4581,7 @@ button:disabled {
   .acred-add-fields,
   .config-race-actions,
   .config-race-info {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .manual-entry-panel,
@@ -4593,11 +4595,11 @@ button:disabled {
   }
 
   .results-actions {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .race-selector-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .race-option {
@@ -4608,7 +4610,7 @@ button:disabled {
   .app-dialog-actions,
   .acred-add-actions {
     display: grid;
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .config-actions .btn,
@@ -4717,13 +4719,14 @@ button:disabled {
   }
 
   .app-shell {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .app-sidebar {
     position: sticky;
     top: 68px;
     z-index: 80;
+    min-width: 0;
   }
 
   .app-sidebar-card {
@@ -4888,7 +4891,7 @@ button:disabled {
   }
 
   .results-actions {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .results-actions .btn,
@@ -4898,7 +4901,7 @@ button:disabled {
 
   .results-searchbar {
     display: grid;
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .acred-search-row {
@@ -4917,7 +4920,7 @@ button:disabled {
   }
 
   .missed-finisher-form {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .missed-field,
@@ -5111,6 +5114,7 @@ button:disabled {
 
 .registration-form {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 1rem;
 }
 
@@ -5118,6 +5122,7 @@ button:disabled {
 .registration-success,
 .registration-error-card,
 .registration-loading {
+  min-width: 0;
   border: 1px solid #c4c6d2;
   background: #ffffff;
   border-radius: 0.5rem;
@@ -5986,7 +5991,7 @@ button:disabled {
 
   .payment-qr-row {
     display: grid;
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .payment-qr-preview,
@@ -5997,7 +6002,7 @@ button:disabled {
   }
 
   .registration-wallet-card {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .registration-payment-qr {
@@ -6007,7 +6012,7 @@ button:disabled {
   }
 
   .registration-kit-benefits {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     padding: 0.9rem;
   }
 
@@ -6024,7 +6029,7 @@ button:disabled {
   .registration-rules-panel,
   .registration-rules-dialog-actions {
     display: grid;
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .race-asset-actions .btn,
@@ -6184,7 +6189,7 @@ button:disabled {
   }
 
   .notification-contact-row {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
@@ -6459,7 +6464,7 @@ button:disabled {
   .registration-type-grid,
   .registration-grid-3,
   .registration-grid-4 {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .registration-price-list {
@@ -6478,7 +6483,7 @@ button:disabled {
   .payment-review-header,
   .payment-review-summary,
   .payment-review-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .payment-review-header img {
@@ -6865,7 +6870,7 @@ button:disabled {
 .welcome-error { color: var(--accent-red); font-size: 0.85rem; }
 
 @media (max-width: 900px) {
-  .welcome-layout { grid-template-columns: 1fr; }
+  .welcome-layout { grid-template-columns: minmax(0, 1fr); }
   .welcome-candidates { max-height: 34vh; }
 }
 
@@ -6944,3 +6949,179 @@ button:disabled {
 .welcome-pad button:nth-child(2) { grid-column: 1; grid-row: 2; }
 .welcome-pad button:nth-child(3) { grid-column: 3; grid-row: 2; }
 .welcome-pad button:nth-child(4) { grid-column: 2; grid-row: 2; }
+
+/* =========================================================
+   Movil: compactar cabecera y marcar los carruseles
+   ========================================================= */
+@media (max-width: 620px) {
+  /* El selector de carrera se comia media pantalla en cada pestaña */
+  .race-selector-card { padding: 0.7rem; }
+
+  .race-selector-header {
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.6rem;
+  }
+
+  .race-selector-kicker { display: none; }
+
+  .race-selector-header h2,
+  .race-selector-header h3 {
+    font-size: 1rem;
+    margin: 0;
+  }
+
+  .race-selector-header .btn {
+    width: auto;
+    flex: 0 0 auto;
+    padding: 0.45rem 0.7rem;
+    font-size: 0.8rem;
+  }
+
+  .race-option { padding: 0.6rem 0.7rem; }
+  .race-option-name { font-size: 0.9rem; }
+  .race-option-meta { font-size: 0.72rem; }
+
+  /* Aviso de que hay mas contenido al costado */
+  .race-selector-grid,
+  .tab-nav-vertical,
+  .view-toggle {
+    -webkit-mask-image: linear-gradient(90deg, #000 0, #000 calc(100% - 28px), transparent 100%);
+            mask-image: linear-gradient(90deg, #000 0, #000 calc(100% - 28px), transparent 100%);
+  }
+
+  .view-toggle {
+    display: flex;
+    overflow-x: auto;
+    gap: 0.4rem;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .view-toggle > * { flex: 0 0 auto; }
+}
+
+/* =========================================================
+   Movil: minimos de uso (tap, legibilidad, tablas)
+   ========================================================= */
+@media (max-width: 760px) {
+  /* --- objetivos tactiles: 44px es el minimo comodo con el pulgar ---
+     El prefijo [data-theme] es para ganarle a reglas de tema que ya fijaban
+     min-height: 2.45rem (39px) con mas especificidad. */
+  [data-theme] .btn,
+  [data-theme] .btn-tab,
+  [data-theme] .navbar-user-trigger,
+  [data-theme] .users-race-select,
+  [data-theme] select,
+  [data-theme] .acred-dorsal-edit-trigger,
+  [data-theme] .acred-table-toggle,
+  [data-theme] .user-race-chip,
+  [data-theme] .btn-danger-sm,
+  [data-theme] .reorder-btn,
+  [data-theme] .race-asset-link {
+    min-height: 44px;
+  }
+
+  [data-theme] .btn,
+  [data-theme] .reorder-btn,
+  [data-theme] .btn-danger-sm,
+  [data-theme] .acred-table-toggle,
+  [data-theme] .acred-dorsal-edit-trigger {
+    min-width: 44px;
+  }
+
+  [data-theme] .race-asset-link {
+    display: inline-flex;
+    align-items: center;
+  }
+
+  /* Las flechas de reordenar venian de 23x20 */
+  .reorder-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.95rem;
+  }
+
+  /* El checkbox nativo queda en 20px, pero su etiqueta si es area de toque */
+  label:has(> input[type="checkbox"]),
+  label:has(> input[type="radio"]) {
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+  }
+
+  input[type="checkbox"],
+  input[type="radio"] {
+    width: 20px;
+    height: 20px;
+    min-width: 20px;
+    flex: 0 0 auto;
+  }
+
+  /* --- legibilidad: nada por debajo de 12px --- */
+  .tab-badge,
+  .race-option-meta,
+  .role-badge,
+  .registration-kit-eyebrow,
+  .registration-panel em,
+  .welcome-candidate-meta,
+  .welcome-tag {
+    font-size: 0.75rem;
+  }
+
+  /* --- tablas anchas: se deslizan, pero sin perder de vista quien es quien --- */
+  .table-wrapper,
+  .config-table-wrapper,
+  .users-table-wrapper {
+    -webkit-mask-image: linear-gradient(90deg, #000 0, #000 calc(100% - 24px), transparent 100%);
+            mask-image: linear-gradient(90deg, #000 0, #000 calc(100% - 24px), transparent 100%);
+  }
+
+  /* Chromium ignora position:sticky en celdas si la tabla colapsa bordes */
+  .table-wrapper table,
+  .config-table-wrapper table,
+  .users-table {
+    border-collapse: separate;
+    border-spacing: 0;
+  }
+
+  /* Se fija la columna que identifica la fila; las de su izquierda pasan por debajo */
+  .acred-table tbody td:nth-child(2),
+  .acred-table thead th:nth-child(2),
+  .table-wrapper .data-table:not(.acred-table):not(.config-cat-table) tbody td:nth-child(4),
+  .table-wrapper .data-table:not(.acred-table):not(.config-cat-table) thead th:nth-child(4),
+  .config-cat-table tbody td:nth-child(2),
+  .config-cat-table thead th:nth-child(2),
+  .users-table tbody td:first-child,
+  .users-table thead th:first-child {
+    position: sticky;
+    left: 0;
+    z-index: 2;
+    background: var(--bg-surface);
+    box-shadow: 1px 0 0 var(--border);
+  }
+
+  .acred-table thead th:nth-child(2),
+  .table-wrapper .data-table:not(.acred-table):not(.config-cat-table) thead th:nth-child(4),
+  .config-cat-table thead th:nth-child(2),
+  .users-table thead th:first-child {
+    z-index: 3;
+    background: var(--bg-card);
+  }
+}
+
+.acred-show-more {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  padding: 0.85rem;
+  border-top: 1px solid var(--border);
+  font-size: 0.85rem;
+}
+
+@media (max-width: 760px) {
+  .acred-show-more { flex-direction: column; }
+  .acred-show-more .btn { width: 100%; justify-content: center; }
+}
