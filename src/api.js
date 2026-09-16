@@ -34,14 +34,15 @@ async function request(method, path, body) {
 
 async function requestBlob(method, path, body) {
   const token = getToken();
+  const isForm = body instanceof FormData;
   const headers = {};
-  if (body) headers["Content-Type"] = "application/json";
+  if (body && !isForm) headers["Content-Type"] = "application/json";
   if (token) headers.Authorization = `Bearer ${token}`;
 
   const res = await fetch(`${BASE}${path}`, {
     method,
     headers,
-    body: body ? JSON.stringify(body) : undefined,
+    body: isForm ? body : body ? JSON.stringify(body) : undefined,
   });
 
   if (!res.ok) {
@@ -103,6 +104,15 @@ function ensureExtension(fileName, extension) {
   return normalized.toLowerCase().endsWith(extension.toLowerCase())
     ? normalized
     : normalized.replace(/\.[a-z0-9]+$/i, "") + extension;
+}
+
+function welcomeFormData(payload, photo) {
+  const formData = new FormData();
+  Object.entries(payload).forEach(([key, value]) => {
+    if (value != null) formData.append(key, String(value));
+  });
+  formData.append("photo", photo);
+  return formData;
 }
 
 function withRaceId(path, raceId) {
@@ -289,9 +299,15 @@ export const api = {
   toggleCarta: (id, raceId) => request("POST", `/participants/${id}/carta`, raceId == null ? undefined : { raceId }),
 
   getWelcomeParticipants: (raceId) => request("GET", withRaceId("/welcome/participants", raceId)),
-  renderWelcomeCard: (payload) => request("POST", "/welcome/render", payload),
-  downloadWelcomeCard: async (payload) => {
-    const result = await requestBlob("POST", "/welcome/render", { ...payload, format: "png" });
+  renderWelcomeCard: (payload, photo) =>
+    photo
+      ? requestForm("POST", "/welcome/render", welcomeFormData(payload, photo))
+      : request("POST", "/welcome/render", payload),
+  downloadWelcomeCard: async (payload, photo) => {
+    const body = { ...payload, format: "png" };
+    const result = photo
+      ? await requestBlob("POST", "/welcome/render", welcomeFormData(body, photo))
+      : await requestBlob("POST", "/welcome/render", body);
     return { ...result, fileName: ensureExtension(result.fileName, ".png") };
   },
 
