@@ -2,6 +2,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { api } from "../api";
 import { confirmDialog, errorDialog } from "../utils/dialog";
 import MediaViewerModal from "./MediaViewerModal";
+import ParticipantFilters, { EMPTY_FILTERS, matchesFilters, distanceOptions } from "./ParticipantFilters";
+import { DEFAULT_CATEGORIES } from "../utils/categories";
 
 const STATUS_LABELS = {
   PENDING: "Pendientes",
@@ -27,8 +29,9 @@ function formatBirthDate(value) {
   return new Date(value).toLocaleDateString("es-PE", { timeZone: "UTC" });
 }
 
-export default function Registrations({ race, raceId, currentUser, onApproved }) {
+export default function Registrations({ race, raceId, currentUser, onApproved, categories = DEFAULT_CATEGORIES }) {
   const [status, setStatus] = useState("PENDING");
+  const [filters, setFilters] = useState(EMPTY_FILTERS);
   const [registrations, setRegistrations] = useState([]);
   const [loading, setLoading] = useState(false);
   const [busyId, setBusyId] = useState(null);
@@ -40,6 +43,17 @@ export default function Registrations({ race, raceId, currentUser, onApproved })
     if (!race?.slug) return "";
     return `${window.location.origin}/inscripciones/${encodeURIComponent(race.slug)}`;
   }, [race?.slug]);
+
+  const distancias = useMemo(
+    () => distanceOptions(race?.distances, registrations.flatMap((r) => r.participants)),
+    [race?.distances, registrations]
+  );
+
+  // ponytail: la solicitud se muestra si al menos un participante calza con los filtros
+  const visibleRegistrations = useMemo(
+    () => registrations.filter((r) => r.participants.some((p) => matchesFilters(p, filters, categories))),
+    [registrations, filters, categories]
+  );
 
   const load = useCallback(async () => {
     if (!raceId) return;
@@ -229,17 +243,28 @@ export default function Registrations({ race, raceId, currentUser, onApproved })
         ))}
       </div>
 
+      <ParticipantFilters
+        filters={filters}
+        onChange={setFilters}
+        categories={categories}
+        distances={distancias}
+      />
+
       {message && <div className="results-copy-ok">{message}</div>}
       {loading && <div className="results-copy-ok">Cargando inscripciones...</div>}
 
-      {!loading && registrations.length === 0 ? (
+      {!loading && visibleRegistrations.length === 0 ? (
         <div className="empty-state">
           <h2>Sin inscripciones</h2>
-          <p className="text-muted">Cuando compartas el link, las solicitudes aparecerán aquí.</p>
+          <p className="text-muted">
+            {registrations.length > 0
+              ? "Ninguna solicitud coincide con los filtros."
+              : "Cuando compartas el link, las solicitudes aparecerán aquí."}
+          </p>
         </div>
       ) : (
         <div className="registration-admin-list">
-          {registrations.map((registration) => (
+          {visibleRegistrations.map((registration) => (
             <article key={registration.id} className="registration-admin-card">
               <div className="registration-admin-head">
                 <div>
@@ -254,7 +279,9 @@ export default function Registrations({ race, raceId, currentUser, onApproved })
               </div>
 
               <div className="registration-admin-participants">
-                {registration.participants.map((participant) => (
+                {registration.participants
+                  .filter((participant) => matchesFilters(participant, filters, categories))
+                  .map((participant) => (
                   <div key={participant.id} className="registration-admin-runner">
                     <strong>{participant.nombre}</strong>
                     <span>DNI {participant.documento}</span>

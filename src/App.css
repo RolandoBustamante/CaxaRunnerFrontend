@@ -40,3 +40,27 @@
 .read-the-docs {
   color: #888;
 }
+
+/* Filtros de participantes (acreditación e inscripciones) */
+.participant-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  margin: 0.75rem 0;
+}
+
+.participant-filters-input,
+.participant-filters-select {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border, #d0d5dd);
+  border-radius: 8px;
+  background: var(--surface, #fff);
+  color: inherit;
+  font-size: 0.9rem;
+}
+
+.participant-filters-input {
+  flex: 1 1 220px;
+  min-width: 180px;
+}

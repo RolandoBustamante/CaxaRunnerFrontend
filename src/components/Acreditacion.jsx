@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { api } from "../api";
 import { getCategory, DEFAULT_CATEGORIES } from "../utils/categories";
+import ParticipantFilters, { EMPTY_FILTERS, matchesFilters, distanceOptions } from "./ParticipantFilters";
 import { confirmDialog, errorDialog } from "../utils/dialog";
 
 // ── Extraer nombre del response RENIEC ────────────────────────────────────
@@ -199,8 +200,9 @@ function ParticipantCard({ participant, onUpdate, onEdit, categories = DEFAULT_C
 }
 
 // ── Main Acreditacion component ────────────────────────────────────────────
-export default function Acreditacion({ participants, categories = DEFAULT_CATEGORIES, onUpdate, raceId }) {
+export default function Acreditacion({ participants, categories = DEFAULT_CATEGORIES, onUpdate, raceId, race }) {
   const [query, setQuery] = useState("");
+  const [filters, setFilters] = useState(EMPTY_FILTERS);
   const [dorsalQuery, setDorsalQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [searching, setSearching] = useState(false);
@@ -353,18 +355,21 @@ export default function Acreditacion({ participants, categories = DEFAULT_CATEGO
 
   // Filtered table rows
   const filteredParticipants = participants.filter((p) => {
+    if (!matchesFilters(p, filters, categories)) return false;
     if (tableFilter === "sin-dorsal") return !p.dorsal;
     if (tableFilter === "sin-kit") return !p.kitEntregado;
     if (tableFilter === "sin-carta") return !p.cartaFirmada;
     return true;
   });
 
+  const distancias = useMemo(() => distanceOptions(race?.distances, participants), [race?.distances, participants]);
+
   const visibleParticipants = filteredParticipants.slice(0, visibleCount);
   const restantes = filteredParticipants.length - visibleParticipants.length;
 
   useEffect(() => {
     setVisibleCount(PAGE_SIZE);
-  }, [tableFilter]);
+  }, [tableFilter, filters]);
 
   const startEditDorsal = (p) => {
     setEditingDorsalId(p.id);
@@ -728,6 +733,13 @@ export default function Acreditacion({ participants, categories = DEFAULT_CATEGO
             <span className="acred-stat-label">Carta firmada</span>
           </div>
         </div>
+
+        <ParticipantFilters
+          filters={filters}
+          onChange={setFilters}
+          categories={categories}
+          distances={distancias}
+        />
 
         {/* Filter tabs */}
         <div className="acred-filter-tabs">

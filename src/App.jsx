@@ -751,6 +751,7 @@ export default function App() {
                   race={selectedRace}
                   raceId={selectedRaceId}
                   currentUser={currentUser}
+                  categories={categories}
                   onApproved={fetchRace}
                 />
               )}
@@ -759,6 +760,7 @@ export default function App() {
                 <Acreditacion
                   participants={participants}
                   categories={categories}
+                  race={selectedRace}
                   onUpdate={handleAcreditacionUpdate}
                   raceId={selectedRaceId}
                 />
