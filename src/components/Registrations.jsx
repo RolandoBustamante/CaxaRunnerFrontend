@@ -4,6 +4,7 @@ import { confirmDialog, errorDialog } from "../utils/dialog";
 import MediaViewerModal from "./MediaViewerModal";
 import ParticipantFilters, { EMPTY_FILTERS, matchesFilters, distanceOptions } from "./ParticipantFilters";
 import { DEFAULT_CATEGORIES } from "../utils/categories";
+import { downloadExcel } from "../utils/excel";
 
 const STATUS_LABELS = {
   PENDING: "Pendientes",
@@ -72,6 +73,40 @@ export default function Registrations({ race, raceId, currentUser, onApproved, c
   useEffect(() => {
     load();
   }, [load]);
+
+  function exportExcel() {
+    const rows = visibleRegistrations.flatMap((registration) =>
+      registration.participants
+        .filter((participant) => matchesFilters(participant, filters, categories))
+        .map((participant) => ({
+          Codigo: registration.code,
+          Estado: registration.status,
+          Fecha: formatDate(registration.createdAt),
+          Contacto: registration.contactName,
+          Telefono: registration.contactPhone || "",
+          Email: registration.contactEmail || "",
+          Total: registration.totalAmount == null ? "" : Number(registration.totalAmount),
+          Descuento: registration.discountCode || "",
+          Nombre: participant.nombre,
+          Documento: participant.documento,
+          Nacimiento: formatBirthDate(participant.birthDate),
+          Genero: participant.genero,
+          Distancia: participant.distancia,
+          Procedencia: participant.procedencia,
+          Club: participant.club || "",
+          "Tipo sangre": participant.bloodType,
+          Prenda: participant.garmentType === "BIVIDI" ? "Bividi" : "Polo",
+          Talla: participant.garmentSize,
+          "Contacto emergencia": participant.emergencyName || "",
+          "Telefono emergencia": participant.emergencyPhone || "",
+        }))
+    );
+    if (rows.length === 0) {
+      setMessage("No hay inscripciones para exportar.");
+      return;
+    }
+    downloadExcel(rows, `inscripciones-${status.toLowerCase()}`);
+  }
 
   async function copyLink() {
     if (!publicLink) return;
@@ -215,6 +250,9 @@ export default function Registrations({ race, raceId, currentUser, onApproved, c
           <h2>Inscripciones</h2>
           <p className="text-muted">Recibe solicitudes públicas, revisa vouchers y aprueba participantes.</p>
         </div>
+        <button className="btn btn-export" onClick={exportExcel} disabled={visibleRegistrations.length === 0}>
+          Descargar Excel
+        </button>
         <button className="btn btn-secondary" onClick={copyLink} disabled={!publicLink}>
           Copiar link
         </button>

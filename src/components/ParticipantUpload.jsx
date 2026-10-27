@@ -1,8 +1,9 @@
 import { useState, useRef, useCallback } from "react";
-import * as XLSX from "xlsx";
+import * as XLSX from "xlsx-js-style";
 import { api } from "../api";
 import { getCategory, DEFAULT_CATEGORIES } from "../utils/categories";
 import { confirmDialog, errorDialog } from "../utils/dialog";
+import { downloadExcel } from "../utils/excel";
 
 function extractReniecName(data) {
   if (!data) return null;
@@ -576,6 +577,25 @@ export default function ParticipantUpload({
         <div className="preview-section">
           <div className="preview-header">
             <h3>Participantes registrados - {participants.length}</h3>
+            <button
+              className="btn btn-export btn-sm"
+              onClick={() =>
+                downloadExcel(
+                  participants.map((p) => ({
+                    Documento: p.documento,
+                    Dorsal: p.dorsal || "",
+                    Nombre: p.nombre,
+                    Edad: p.edad,
+                    Genero: p.genero,
+                    Distancia: p.distancia,
+                    Categoria: getCategory(p.edad, p.genero, p.distancia, categories),
+                  })),
+                  "participantes"
+                )
+              }
+            >
+              Descargar Excel
+            </button>
             <button className="btn btn-danger btn-sm" onClick={resetExcelState}>
               Limpiar vista
             </button>

@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef } from "react";
-import * as XLSX from "xlsx";
+import * as XLSX from "xlsx-js-style";
 import {
   formatTime,
   getCategory,
@@ -12,8 +12,9 @@ import {
 import CategoryResults from "./CategoryResults";
 import AbsoluteWinners from "./AbsoluteWinners";
 import TimeInput from "./TimeInput";
+import { downloadExcel } from "../utils/excel";
 
-function generateCSV(finishers, participants, categories) {
+function resultRows(finishers, participants, categories) {
   const participantMap = {};
   for (const participant of participants) {
     if (participant.dorsal) {
@@ -26,53 +27,27 @@ function generateCSV(finishers, participants, categories) {
   const dqd = finishers.filter((finisher) => finisher.disqualified && !finisher.noTime);
   const all = [...active, ...noTime, ...dqd];
 
-  const headers = [
-    "Posicion",
-    "Dorsal",
-    "Nombre",
-    "Edad",
-    "Genero",
-    "Distancia",
-    "Categoria",
-    "Tiempo",
-    "Estado",
-    "Motivo DQ",
-  ];
-
-  const rows = all.map((finisher, index) => {
+  return all.map((finisher, index) => {
     const participant = participantMap[String(finisher.dorsal).trim()];
     const category = participant
       ? getCategory(participant.edad, participant.genero, participant.distancia, categories)
       : "-";
 
-    return [
-      finisher.noTime ? "ST" : finisher.disqualified ? "DQ" : finisher.position ?? index + 1,
-      finisher.dorsal,
-      participant ? participant.nombre : "-",
-      participant ? participant.edad : "-",
-      participant ? participant.genero : "-",
-      participant ? participant.distancia : "-",
-      category,
-      formatTime(finisher.elapsedMs),
-      finisher.noTime ? "ST" : finisher.disqualified ? "DQ" : "OK",
-      finisher.noTime ? "Sin tiempo" : finisher.dqReason || "",
-    ];
+    return {
+      Posicion: finisher.noTime ? "ST" : finisher.disqualified ? "DQ" : finisher.position ?? index + 1,
+      Dorsal: finisher.dorsal,
+      Nombre: participant ? participant.nombre : "-",
+      Edad: participant ? participant.edad : "-",
+      Genero: participant ? participant.genero : "-",
+      Distancia: participant ? participant.distancia : "-",
+      Categoria: category,
+      Tiempo: formatTime(finisher.elapsedMs),
+      Estado: finisher.noTime ? "ST" : finisher.disqualified ? "DQ" : "OK",
+      "Motivo DQ": finisher.noTime ? "Sin tiempo" : finisher.dqReason || "",
+    };
   });
-
-  return [headers, ...rows]
-    .map((row) => row.map((cell) => `"${String(cell).replace(/"/g, "\"\"")}"`).join(","))
-    .join("\n");
 }
 
-function downloadCSV(content, filename) {
-  const blob = new Blob(["\uFEFF" + content], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = filename;
-  link.click();
-  URL.revokeObjectURL(url);
-}
 
 function normalizeHeader(key) {
   return String(key || "")
@@ -342,9 +317,8 @@ export default function Results({
   }, [missedDorsal, missedTimeMs, findParticipantByDorsal, finisherDorsals, finishers, onFinisherAdd, raceStartTime]);
 
   const handleExport = () => {
-    const csv = generateCSV(filteredFinishers, participants, categories);
     const suffix = distanceTab === "TODAS" ? "todas" : distanceTab.toLowerCase();
-    downloadCSV(csv, `resultados-${suffix}-${new Date().toISOString().slice(0, 10)}.csv`);
+    downloadExcel(resultRows(filteredFinishers, participants, categories), `resultados-${suffix}`);
   };
 
   const handleCopyPublicResults = useCallback(async () => {
@@ -449,7 +423,7 @@ export default function Results({
             </button>
           )}
           <button className="btn btn-export" onClick={handleExport}>
-            Exportar CSV
+            Descargar Excel
           </button>
           <button className="btn btn-secondary" onClick={() => setImportOpen((value) => !value)}>
             Importar resultados

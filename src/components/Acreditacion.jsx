@@ -3,6 +3,7 @@ import { api } from "../api";
 import { getCategory, DEFAULT_CATEGORIES } from "../utils/categories";
 import ParticipantFilters, { EMPTY_FILTERS, matchesFilters, distanceOptions } from "./ParticipantFilters";
 import { confirmDialog, errorDialog } from "../utils/dialog";
+import { downloadExcel } from "../utils/excel";
 
 // ── Extraer nombre del response RENIEC ────────────────────────────────────
 function extractReniecName(data) {
@@ -364,6 +365,21 @@ export default function Acreditacion({ participants, categories = DEFAULT_CATEGO
 
   const distancias = useMemo(() => distanceOptions(race?.distances, participants), [race?.distances, participants]);
 
+  function exportExcel() {
+    const rows = filteredParticipants.map((p) => ({
+      Documento: p.documento,
+      Dorsal: p.dorsal || "",
+      Nombre: p.nombre,
+      Edad: p.edad,
+      Genero: p.genero,
+      Distancia: p.distancia,
+      Categoria: getCategory(p.edad, p.genero, p.distancia, categories),
+      Kit: p.kitEntregado ? "SI" : "NO",
+      Carta: p.cartaFirmada ? "SI" : "NO",
+    }));
+    downloadExcel(rows, `acreditacion-${tableFilter}`);
+  }
+
   const visibleParticipants = filteredParticipants.slice(0, visibleCount);
   const restantes = filteredParticipants.length - visibleParticipants.length;
 
@@ -709,6 +725,9 @@ export default function Acreditacion({ participants, categories = DEFAULT_CATEGO
       <div className="acred-section">
         <div className="section-header">
           <h2>Estado General</h2>
+          <button className="btn btn-export" onClick={exportExcel} disabled={filteredParticipants.length === 0}>
+            Descargar Excel
+          </button>
         </div>
 
         {/* Stats bar */}
