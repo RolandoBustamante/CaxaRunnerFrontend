@@ -394,6 +394,8 @@ export default function PublicRegistrationView() {
     );
   }
 
+  const cerrado = !race.registrationsEnabled || race.registrationsClosed;
+
   return (
     <div className="registration-public-page">
       <section className="registration-hero">
@@ -405,10 +407,20 @@ export default function PublicRegistrationView() {
         </div>
       </section>
 
-      {!race.registrationsEnabled && (
+      {!race.registrationsEnabled ? (
         <div className="registration-error-card">Las inscripciones todavía no están habilitadas para esta carrera.</div>
-      )}
+      ) : race.registrationsClosed ? (
+        <div className="registration-notice-card registration-closed-card">
+          <h2>¡Gracias por tu interés!</h2>
+          <p>Las inscripciones para esta carrera cerraron el {formatRaceDate(race.registrationDeadline)}.</p>
+          <p>Síguenos para enterarte de nuevos eventos y novedades.</p>
+        </div>
+      ) : race.registrationDeadline ? (
+        <div className="registration-notice-card">Puedes inscribirte hasta el {formatRaceDate(race.registrationDeadline)}.</div>
+      ) : null}
 
+      {/* ponytail: sin formulario si no se puede enviar, para que nadie lo llene en vano */}
+      {!cerrado && (
       <form className="registration-form" onSubmit={handleSubmit}>
         <section className="registration-panel registration-payment-panel">
           <div>
@@ -535,12 +547,11 @@ export default function PublicRegistrationView() {
               <span className="registration-kit-eyebrow">Tu inscripción incluye</span>
               <strong>Kit oficial del corredor</strong>
               <p>
-                El pago corresponde a tu kit de competencia: chip, dorsal, polo y medalla finisher,
+                El pago corresponde a tu kit de competencia: dorsal, polo y medalla finisher,
                 además de los beneficios de la expo y de nuestros auspiciadores.
               </p>
             </div>
             <ul>
-              <li>Chip</li>
               <li>Dorsal</li>
               <li>Polo</li>
               <li>Medalla finisher</li>
@@ -605,7 +616,7 @@ export default function PublicRegistrationView() {
                       setAppliedDiscount(null);
                       setDiscountMessage("");
                     }}
-                    placeholder="PRIMEROLA"
+                    placeholder="Cod. descuento"
                   />
                   <button type="button" className="btn btn-secondary btn-sm" onClick={applyDiscountCode}>
                     Aplicar
@@ -647,10 +658,11 @@ export default function PublicRegistrationView() {
 
         {error && <div className="registration-error-card">{error}</div>}
 
-        <button className="registration-submit" type="submit" disabled={busy || !race.registrationsEnabled}>
+        <button className="registration-submit" type="submit" disabled={busy}>
           {busy ? "Enviando..." : "Enviar inscripción"}
         </button>
       </form>
+      )}
       {showRulesDialog && (
         <div className="registration-dialog-backdrop" role="dialog" aria-modal="true" aria-label="Bases de la carrera">
           <div className="registration-rules-dialog">

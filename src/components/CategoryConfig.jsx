@@ -154,6 +154,7 @@ export default function CategoryConfig({
   const [showDorsalPublic, setShowDorsalPublic] = useState(race?.showDorsalPublic !== false);
   const [certificateTemplate, setCertificateTemplate] = useState(race?.certificateTemplate || "classic");
   const [registrationsEnabled, setRegistrationsEnabled] = useState(race?.registrationsEnabled === true);
+  const [registrationDeadline, setRegistrationDeadline] = useState(toDateInputValue(race?.registrationDeadline));
   const [discountsEnabled, setDiscountsEnabled] = useState(race?.discountsEnabled === true);
   const [registrationPricesText, setRegistrationPricesText] = useState(pricesToText(race?.registrationPrices));
   const [registrationInstructions, setRegistrationInstructions] = useState(race?.registrationInstructions || "");
@@ -164,6 +165,7 @@ export default function CategoryConfig({
   const [uploadingRaceAsset, setUploadingRaceAsset] = useState("");
   const [discountCodes, setDiscountCodes] = useState([]);
   const [discountForm, setDiscountForm] = useState(() => emptyDiscountForm());
+  const [editingDiscountId, setEditingDiscountId] = useState(null);
 
   const distanceOptions = useMemo(() => {
     const raceDistances = Array.isArray(race?.distances) ? race.distances : [];
@@ -180,6 +182,7 @@ export default function CategoryConfig({
     setShowDorsalPublic(race?.showDorsalPublic !== false);
     setCertificateTemplate(race?.certificateTemplate || "classic");
     setRegistrationsEnabled(race?.registrationsEnabled === true);
+    setRegistrationDeadline(toDateInputValue(race?.registrationDeadline));
     setDiscountsEnabled(race?.discountsEnabled === true);
     setRegistrationPricesText(pricesToText(race?.registrationPrices));
     setRegistrationInstructions(race?.registrationInstructions || "");
@@ -187,7 +190,7 @@ export default function CategoryConfig({
     setWhatsappContactPrefix(race?.whatsappContactPrefix || "MM-");
     setPaymentMethods(normalizePaymentMethods(race?.registrationPaymentMethods));
     setMsg(null);
-  }, [categories, race?.certificateTemplate, race?.certificatesEnabled, race?.discountsEnabled, race?.distances, race?.eventDate, race?.publicNotice, race?.registrationInstructions, race?.registrationNotificationPhones, race?.registrationPaymentMethods, race?.registrationPrices, race?.registrationsEnabled, race?.showDorsalPublic, race?.whatsappContactPrefix]);
+  }, [categories, race?.certificateTemplate, race?.certificatesEnabled, race?.discountsEnabled, race?.distances, race?.eventDate, race?.publicNotice, race?.registrationInstructions, race?.registrationNotificationPhones, race?.registrationPaymentMethods, race?.registrationPrices, race?.registrationDeadline, race?.registrationsEnabled, race?.showDorsalPublic, race?.whatsappContactPrefix]);
 
   async function loadDiscountCodes() {
     if (!raceId) return;
@@ -468,6 +471,7 @@ export default function CategoryConfig({
         showDorsalPublic,
         certificateTemplate,
         registrationsEnabled,
+        registrationDeadline: registrationDeadline || null,
         discountsEnabled,
         registrationPrices: parsePricesText(registrationPricesText),
         registrationInstructions: registrationInstructions.trim() || null,
@@ -484,7 +488,7 @@ export default function CategoryConfig({
     }
   }
 
-  async function handleCreateDiscount(event) {
+  async function handleSubmitDiscount(event) {
     event.preventDefault();
     if (!raceId) return;
     const code = discountForm.code.trim().toUpperCase().replace(/\s+/g, "");
@@ -510,25 +514,50 @@ export default function CategoryConfig({
       return;
     }
 
+    const payload = {
+      code,
+      discountType,
+      percent,
+      amountPerParticipant,
+      maxUses,
+      validUntil: discountForm.validUntil || null,
+      active: discountForm.active,
+    };
+
     setBusy(true);
     try {
-      await api.createDiscountCode({
-        code,
-        discountType,
-        percent,
-        amountPerParticipant,
-        maxUses,
-        validUntil: discountForm.validUntil || null,
-        active: discountForm.active,
-      }, raceId);
-      setDiscountForm(emptyDiscountForm());
-      setMsg({ type: "ok", text: "Codigo de descuento creado." });
+      if (editingDiscountId) {
+        await api.updateDiscountCode(editingDiscountId, payload, raceId);
+      } else {
+        await api.createDiscountCode(payload, raceId);
+      }
+      cancelEditDiscount();
+      setMsg({ type: "ok", text: editingDiscountId ? "Codigo actualizado." : "Codigo de descuento creado." });
       await loadDiscountCodes();
     } catch (err) {
-      setMsg({ type: "error", text: err.message || "No se pudo crear el descuento." });
+      setMsg({ type: "error", text: err.message || "No se pudo guardar el descuento." });
     } finally {
       setBusy(false);
     }
+  }
+
+  function startEditDiscount(discountCode) {
+    setEditingDiscountId(discountCode.id);
+    setDiscountForm({
+      code: discountCode.code,
+      discountType: discountCode.discountType || "PERCENT",
+      percent: discountCode.percent == null ? "" : String(discountCode.percent),
+      amountPerParticipant: discountCode.amountPerParticipant == null ? "" : String(discountCode.amountPerParticipant),
+      maxUses: discountCode.maxUses == null ? "" : String(discountCode.maxUses),
+      validUntil: toDateInputValue(discountCode.validUntil),
+      active: discountCode.active,
+    });
+    setMsg(null);
+  }
+
+  function cancelEditDiscount() {
+    setEditingDiscountId(null);
+    setDiscountForm(emptyDiscountForm());
   }
 
   async function toggleDiscountCode(discountCode) {
@@ -661,6 +690,20 @@ export default function CategoryConfig({
                 }}
               />
               <span>Habilitar formulario de inscripciones</span>
+            </label>
+            <label className="config-date-field">
+              <span>Inscripciones abiertas hasta</span>
+              <input
+                className="config-input"
+                type="date"
+                value={registrationDeadline}
+                onChange={(event) => {
+                  setRegistrationDeadline(event.target.value);
+                  setMsg(null);
+                }}
+                disabled={!registrationsEnabled}
+              />
+              <small className="config-field-help">Último día para inscribirse (inclusive). Vacío = sin fecha de cierre.</small>
             </label>
             <label className="config-checkbox-field">
               <input
@@ -938,14 +981,14 @@ export default function CategoryConfig({
           </div>
         </div>
 
-        <form className="config-discount-form" onSubmit={handleCreateDiscount}>
+        <form className="config-discount-form" onSubmit={handleSubmitDiscount}>
           <label>
             <span>Codigo</span>
             <input
               className="config-input"
               value={discountForm.code}
               onChange={(event) => setDiscountForm((prev) => ({ ...prev, code: event.target.value.toUpperCase().replace(/\s+/g, "") }))}
-              placeholder="PRIMEROLA"
+              placeholder="Cod. descuento"
             />
           </label>
           <label>
@@ -1015,7 +1058,14 @@ export default function CategoryConfig({
             />
             <span>Activo</span>
           </label>
-          <button className="btn btn-primary" type="submit" disabled={busy}>Crear codigo</button>
+          <button className="btn btn-primary" type="submit" disabled={busy}>
+            {editingDiscountId ? "Guardar cambios" : "Crear codigo"}
+          </button>
+          {editingDiscountId && (
+            <button className="btn btn-secondary" type="button" onClick={cancelEditDiscount} disabled={busy}>
+              Cancelar
+            </button>
+          )}
         </form>
 
         <div className="config-discount-list">
@@ -1027,9 +1077,14 @@ export default function CategoryConfig({
                 <strong>{discountCode.code}</strong>
                 <span>{getDiscountDescription(discountCode)} · {discountCode.usedCount}/{discountCode.maxUses ?? "sin limite"} corredores · {formatDiscountDate(discountCode.validUntil)}</span>
               </div>
-              <button className="btn btn-secondary btn-sm" onClick={() => toggleDiscountCode(discountCode)} disabled={busy}>
-                {discountCode.active ? "Desactivar" : "Activar"}
-              </button>
+              <div className="config-discount-actions">
+                <button className="btn btn-secondary btn-sm" type="button" onClick={() => startEditDiscount(discountCode)} disabled={busy}>
+                  Editar
+                </button>
+                <button className="btn btn-secondary btn-sm" type="button" onClick={() => toggleDiscountCode(discountCode)} disabled={busy}>
+                  {discountCode.active ? "Desactivar" : "Activar"}
+                </button>
+              </div>
             </div>
           ))}
         </div>
