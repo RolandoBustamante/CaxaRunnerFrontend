@@ -554,6 +554,23 @@ button[aria-busy="true"] {
   border: 1px solid rgba(236, 72, 153, 0.3);
 }
 
+/* Prenda + talla en acreditacion: se lee de pie, al sol, con el kit en la mano */
+.acred-prenda {
+  display: inline-block;
+  padding: 0.1rem 0.5rem;
+  background: rgba(59, 130, 246, 0.12);
+  border: 1px solid rgba(59, 130, 246, 0.35);
+  border-radius: var(--radius-sm);
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
+.acred-prenda-vacia {
+  color: var(--text-muted);
+}
+
 .category-tag {
   display: inline-block;
   padding: 0.1rem 0.5rem;

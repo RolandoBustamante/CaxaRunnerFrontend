@@ -13,6 +13,12 @@ function extractReniecName(data) {
 
 const PAGE_SIZE = 25;
 
+// Prenda y talla vienen de la inscripcion; los importados por Excel no la tienen
+function prendaLabel(p) {
+  if (!p?.garmentSize) return "";
+  return `${p.garmentType === "BIVIDI" ? "Bividi" : "Polo"} · Talla ${p.garmentSize}`;
+}
+
 const EMPTY_FORM = { documento: "", nombre: "", edad: "", genero: "M", distancia: "10K", dorsal: "" };
 
 function participantToEditForm(participant) {
@@ -121,6 +127,7 @@ function ParticipantCard({ participant, onUpdate, onEdit, categories = DEFAULT_C
           <div className="acred-meta">
             <span className={`gender-badge gender-${p.genero.toLowerCase()}`}>{p.genero}</span>
             <span className="category-tag">{category}</span>
+            {prendaLabel(p) && <span className="acred-prenda">{prendaLabel(p)}</span>}
           </div>
         </div>
         <button className="btn btn-secondary btn-sm" onClick={() => onEdit?.(p)} disabled={busy}>
@@ -389,6 +396,8 @@ export default function Acreditacion({ participants, categories = DEFAULT_CATEGO
       Genero: p.genero,
       Distancia: p.distancia,
       Categoria: getCategory(p.edad, p.genero, p.distancia, categories),
+      Prenda: p.garmentType === "BIVIDI" ? "Bividi" : p.garmentType ? "Polo" : "",
+      Talla: p.garmentSize || "",
       Kit: p.kitEntregado ? "SI" : "NO",
       Carta: p.cartaFirmada ? "SI" : "NO",
     }));
@@ -827,6 +836,7 @@ export default function Acreditacion({ participants, categories = DEFAULT_CATEGO
                   <th scope="col">Documento</th>
                   <th scope="col">Nombre</th>
                   <th scope="col">Categoría</th>
+                  <th scope="col">Prenda</th>
                   <th scope="col">Dorsal</th>
                   <th scope="col">Kit</th>
                   <th scope="col">Carta</th>
@@ -891,6 +901,9 @@ export default function Acreditacion({ participants, categories = DEFAULT_CATEGO
                             </select>
                           </div>
                         ) : <span className="category-tag">{category}</span>}
+                      </td>
+                      <td>
+                        {prendaLabel(p) ? <span className="acred-prenda">{prendaLabel(p)}</span> : <span className="acred-prenda-vacia">—</span>}
                       </td>
                       <td className="acred-dorsal-cell">
                         {isEditingParticipant ? (
