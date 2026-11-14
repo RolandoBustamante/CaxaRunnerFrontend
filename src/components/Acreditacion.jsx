@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { api } from "../api";
 import { getCategory, DEFAULT_CATEGORIES } from "../utils/categories";
-import ParticipantFilters, { EMPTY_FILTERS, matchesFilters, distanceOptions } from "./ParticipantFilters";
+import ParticipantFilters, { EMPTY_FILTERS, matchesFilters, distanceOptions, distanceSelectOptions } from "./ParticipantFilters";
 import { confirmDialog, errorDialog } from "../utils/dialog";
 import { downloadExcel } from "../utils/excel";
 
@@ -50,6 +50,7 @@ function ParticipantCard({ participant, onUpdate, onEdit, categories = DEFAULT_C
   const [dorsalInput, setDorsalInput] = useState("");
   const [assigning, setAssigning] = useState(false);
   const [assignError, setAssignError] = useState("");
+  const [toggleError, setToggleError] = useState("");
   const [busy, setBusy] = useState(false);
 
   const p = participant;
@@ -81,29 +82,34 @@ function ParticipantCard({ participant, onUpdate, onEdit, categories = DEFAULT_C
     }
   };
 
-  const handleToggleKit = async () => {
+  // Reverting is the recovery path for a mis-tap on the wrong card, so it has
+  // to exist; the confirm is what keeps it from being a second mis-tap.
+  const runToggle = async (call, { label, isOn }) => {
+    if (isOn) {
+      const ok = await confirmDialog({
+        title: `¿Revertir ${label.toLowerCase()}?`,
+        text: `${p.nombre} figura con ${label.toLowerCase()}. Esto lo deja como no entregado.`,
+        confirmText: "Revertir",
+      });
+      if (!ok) return;
+    }
+    setToggleError("");
     setBusy(true);
     try {
-      await api.toggleKit(p.id, raceId);
+      await call(p.id, raceId);
       onUpdate();
-    } catch (err) {
-      console.error(err);
+    } catch {
+      setToggleError(`No se pudo registrar ${label.toLowerCase()}. Verificá la conexión e intentá de nuevo.`);
     } finally {
       setBusy(false);
     }
   };
 
-  const handleToggleCarta = async () => {
-    setBusy(true);
-    try {
-      await api.toggleCarta(p.id, raceId);
-      onUpdate();
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setBusy(false);
-    }
-  };
+  const handleToggleKit = () =>
+    runToggle(api.toggleKit, { label: "Kit entregado", isOn: p.kitEntregado });
+
+  const handleToggleCarta = () =>
+    runToggle(api.toggleCarta, { label: "Carta firmada", isOn: p.cartaFirmada });
 
   return (
     <div className={`acred-card ${busy ? "acred-card-busy" : ""}`}>
@@ -180,22 +186,27 @@ function ParticipantCard({ participant, onUpdate, onEdit, categories = DEFAULT_C
         <button
           className={`acred-toggle-btn ${p.kitEntregado ? "acred-toggle-on" : "acred-toggle-off"}`}
           onClick={handleToggleKit}
-          disabled={busy || p.kitEntregado}
-          title={p.kitEntregado ? "Kit ya entregado" : "Marcar kit entregado"}
+          disabled={busy}
+          aria-pressed={p.kitEntregado}
+          title={p.kitEntregado ? "Kit entregado — tocá para revertir" : "Marcar kit entregado"}
         >
-          <span className="acred-toggle-icon">{p.kitEntregado ? "✓" : "—"}</span>
+          <span className="acred-toggle-icon" aria-hidden="true">{p.kitEntregado ? "✓" : "—"}</span>
           <span className="acred-toggle-label">Kit</span>
+          <span className="sr-only">{p.kitEntregado ? "entregado" : "sin entregar"}</span>
         </button>
         <button
           className={`acred-toggle-btn ${p.cartaFirmada ? "acred-toggle-on" : "acred-toggle-off"}`}
           onClick={handleToggleCarta}
-          disabled={busy || p.cartaFirmada}
-          title={p.cartaFirmada ? "Carta ya firmada" : "Marcar carta firmada"}
+          disabled={busy}
+          aria-pressed={p.cartaFirmada}
+          title={p.cartaFirmada ? "Carta firmada — tocá para revertir" : "Marcar carta firmada"}
         >
-          <span className="acred-toggle-icon">{p.cartaFirmada ? "✓" : "—"}</span>
+          <span className="acred-toggle-icon" aria-hidden="true">{p.cartaFirmada ? "✓" : "—"}</span>
           <span className="acred-toggle-label">Carta</span>
+          <span className="sr-only">{p.cartaFirmada ? "firmada" : "sin firmar"}</span>
         </button>
       </div>
+      {toggleError && <div className="acred-assign-error acred-toggle-error" role="alert">{toggleError}</div>}
     </div>
   );
 }
@@ -219,6 +230,8 @@ export default function Acreditacion({ participants, categories = DEFAULT_CATEGO
   const [editingParticipantError, setEditingParticipantError] = useState("");
   const [editingParticipantBusy, setEditingParticipantBusy] = useState(false);
   const [deletingParticipantId, setDeletingParticipantId] = useState(null);
+  const [togglingId, setTogglingId] = useState(null);
+  const [toggleTableError, setToggleTableError] = useState("");
   const searchInputRef = useRef(null);
 
   // Manual add form
@@ -301,14 +314,18 @@ export default function Acreditacion({ participants, categories = DEFAULT_CATEGO
     }
   }, []);
 
+  const distancias = useMemo(() => distanceOptions(race?.distances, participants), [race?.distances, participants]);
+
+  const distanciaOpciones = useCallback((actual) => distanceSelectOptions(distancias, actual), [distancias]);
+
   const openAddForm = useCallback((documento = "") => {
     const doc = documento.trim();
-    setAddForm({ ...EMPTY_FORM, documento: doc });
+    setAddForm({ ...EMPTY_FORM, documento: doc, distancia: distancias[0] || EMPTY_FORM.distancia });
     setAddError("");
     setDniLookupStatus("idle");
     setShowAddForm(true);
     if (/^\d{8}$/.test(doc)) lookupDni(doc);
-  }, [lookupDni]);
+  }, [lookupDni, distancias]);
 
   const handleAddFormDocChange = useCallback((val) => {
     setAddForm((prev) => ({ ...prev, documento: val, nombre: "" }));
@@ -363,8 +380,6 @@ export default function Acreditacion({ participants, categories = DEFAULT_CATEGO
     return true;
   });
 
-  const distancias = useMemo(() => distanceOptions(race?.distances, participants), [race?.distances, participants]);
-
   function exportExcel() {
     const rows = filteredParticipants.map((p) => ({
       Documento: p.documento,
@@ -414,23 +429,33 @@ export default function Acreditacion({ participants, categories = DEFAULT_CATEGO
     }
   };
 
-  const handleToggleKitTable = async (id) => {
+  const toggleTableFlag = async (participant, call, { label, isOn }) => {
+    if (togglingId === participant.id) return;
+    if (isOn) {
+      const ok = await confirmDialog({
+        title: `¿Revertir ${label.toLowerCase()}?`,
+        text: `${participant.nombre} figura con ${label.toLowerCase()}. Esto lo deja como no entregado.`,
+        confirmText: "Revertir",
+      });
+      if (!ok) return;
+    }
+    setToggleTableError("");
+    setTogglingId(participant.id);
     try {
-      await api.toggleKit(id, raceId);
+      await call(participant.id, raceId);
       await onUpdate();
-    } catch (err) {
-      console.error(err);
+    } catch {
+      setToggleTableError(`No se pudo registrar ${label.toLowerCase()} de ${participant.nombre}. Verificá la conexión e intentá de nuevo.`);
+    } finally {
+      setTogglingId(null);
     }
   };
 
-  const handleToggleCartaTable = async (id) => {
-    try {
-      await api.toggleCarta(id, raceId);
-      await onUpdate();
-    } catch (err) {
-      console.error(err);
-    }
-  };
+  const handleToggleKitTable = (participant) =>
+    toggleTableFlag(participant, api.toggleKit, { label: "Kit entregado", isOn: participant.kitEntregado });
+
+  const handleToggleCartaTable = (participant) =>
+    toggleTableFlag(participant, api.toggleCarta, { label: "Carta firmada", isOn: participant.cartaFirmada });
 
   const startEditParticipant = (participant) => {
     setEditingParticipantId(participant.id);
@@ -552,9 +577,9 @@ export default function Acreditacion({ participants, categories = DEFAULT_CATEGO
             <button
               className="acred-search-clear"
               onClick={() => setDorsalQuery("")}
-              aria-label="Limpiar busqueda por dorsal"
+              aria-label="Limpiar búsqueda por dorsal"
             >
-              x
+              ✕
             </button>
           )}
         </div>
@@ -612,7 +637,7 @@ export default function Acreditacion({ participants, categories = DEFAULT_CATEGO
           <div className="acred-add-form">
             <div className="acred-add-form-header">
               <span className="acred-add-form-title">Agregar participante</span>
-              <button className="acred-add-close" onClick={() => setShowAddForm(false)}>✕</button>
+              <button className="acred-add-close" onClick={() => setShowAddForm(false)} aria-label="Cerrar formulario de alta">✕</button>
             </div>
 
             <div className="acred-add-fields">
@@ -688,8 +713,9 @@ export default function Acreditacion({ participants, categories = DEFAULT_CATEGO
                   onChange={(e) => setAddForm((prev) => ({ ...prev, distancia: e.target.value }))}
                   disabled={addBusy}
                 >
-                  <option value="5K">5K</option>
-                  <option value="10K">10K</option>
+                  {distanciaOpciones(addForm.distancia).map((d) => (
+                    <option key={d} value={d}>{d}</option>
+                  ))}
                 </select>
               </div>
 
@@ -789,16 +815,22 @@ export default function Acreditacion({ participants, categories = DEFAULT_CATEGO
           </div>
         ) : (
           <div className="table-wrapper">
+            {toggleTableError && (
+              <div className="acred-table-error" role="alert">{toggleTableError}</div>
+            )}
             <table className="data-table acred-table">
+              <caption className="sr-only">
+                Participantes inscritos: documento, nombre, categoría, dorsal asignado y entrega de kit y carta.
+              </caption>
               <thead>
                 <tr>
-                  <th>Documento</th>
-                  <th>Nombre</th>
-                  <th>Categoria</th>
-                  <th>Dorsal</th>
-                  <th>Kit</th>
-                  <th>Carta</th>
-                  <th>Acciones</th>
+                  <th scope="col">Documento</th>
+                  <th scope="col">Nombre</th>
+                  <th scope="col">Categoría</th>
+                  <th scope="col">Dorsal</th>
+                  <th scope="col">Kit</th>
+                  <th scope="col">Carta</th>
+                  <th scope="col">Acciones</th>
                 </tr>
               </thead>
               <tbody>
@@ -853,8 +885,9 @@ export default function Acreditacion({ participants, categories = DEFAULT_CATEGO
                               onChange={(e) => { setEditingParticipantForm((prev) => ({ ...prev, distancia: e.target.value })); setEditingParticipantError(""); }}
                               disabled={editingParticipantBusy}
                             >
-                              <option value="5K">5K</option>
-                              <option value="10K">10K</option>
+                              {distanciaOpciones(editingParticipantForm.distancia).map((d) => (
+                                <option key={d} value={d}>{d}</option>
+                              ))}
                             </select>
                           </div>
                         ) : <span className="category-tag">{category}</span>}
@@ -899,21 +932,27 @@ export default function Acreditacion({ participants, categories = DEFAULT_CATEGO
                       <td>
                         <button
                           className={`acred-table-toggle ${p.kitEntregado ? "acred-table-toggle-on" : "acred-table-toggle-off"}`}
-                          onClick={() => handleToggleKitTable(p.id)}
-                          disabled={p.kitEntregado}
-                          title={p.kitEntregado ? "Kit ya entregado" : "Marcar kit entregado"}
+                          onClick={() => handleToggleKitTable(p)}
+                          disabled={togglingId === p.id}
+                          aria-busy={togglingId === p.id}
+                          aria-pressed={p.kitEntregado}
+                          title={p.kitEntregado ? "Kit entregado — tocá para revertir" : "Marcar kit entregado"}
                         >
-                          {p.kitEntregado ? "✓" : "—"}
+                          <span aria-hidden="true">{p.kitEntregado ? "✓" : "—"}</span>
+                          <span className="sr-only">Kit {p.kitEntregado ? "entregado" : "sin entregar"}</span>
                         </button>
                       </td>
                       <td>
                         <button
                           className={`acred-table-toggle ${p.cartaFirmada ? "acred-table-toggle-on" : "acred-table-toggle-off"}`}
-                          onClick={() => handleToggleCartaTable(p.id)}
-                          disabled={p.cartaFirmada}
-                          title={p.cartaFirmada ? "Carta ya firmada" : "Marcar carta firmada"}
+                          onClick={() => handleToggleCartaTable(p)}
+                          disabled={togglingId === p.id}
+                          aria-busy={togglingId === p.id}
+                          aria-pressed={p.cartaFirmada}
+                          title={p.cartaFirmada ? "Carta firmada — tocá para revertir" : "Marcar carta firmada"}
                         >
-                          {p.cartaFirmada ? "✓" : "—"}
+                          <span aria-hidden="true">{p.cartaFirmada ? "✓" : "—"}</span>
+                          <span className="sr-only">Carta {p.cartaFirmada ? "firmada" : "sin firmar"}</span>
                         </button>
                       </td>
                       <td>
@@ -1022,7 +1061,7 @@ export default function Acreditacion({ participants, categories = DEFAULT_CATEGO
                   />
                 </label>
                 <label className="acred-add-field acred-add-field-sm">
-                  <span className="acred-add-label">Genero</span>
+                  <span className="acred-add-label">Género</span>
                   <select
                     className="acred-add-input"
                     value={editingParticipantForm.genero}
@@ -1047,8 +1086,9 @@ export default function Acreditacion({ participants, categories = DEFAULT_CATEGO
                     }}
                     disabled={editingParticipantBusy}
                   >
-                    <option value="5K">5K</option>
-                    <option value="10K">10K</option>
+                    {distanciaOpciones(editingParticipantForm.distancia).map((d) => (
+                      <option key={d} value={d}>{d}</option>
+                    ))}
                   </select>
                 </label>
                 <label className="acred-add-field acred-add-field-sm">

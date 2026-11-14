@@ -20,6 +20,13 @@ export function distanceOptions(raceDistances, items) {
   return [...new Set((items || []).map((p) => norm(p.distancia)).filter(Boolean))];
 }
 
+// Para los <select> que graban, no solo los que filtran: el valor actual
+// entra siempre, asi un 21K heredado no se coerciona al primer option, y una
+// carrera sin distancias cargadas igual rinde un select usable.
+export function distanceSelectOptions(distances, current) {
+  return [...new Set([...(distances || []), current].map(norm).filter(Boolean))];
+}
+
 export default function ParticipantFilters({ filters, onChange, categories = DEFAULT_CATEGORIES, distances = [] }) {
   const set = (patch) => onChange({ ...filters, ...patch });
   const categoryNames = [...new Set(categories.map((c) => c.name))];

@@ -1,5 +1,6 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useMemo, useRef } from "react";
 import * as XLSX from "xlsx-js-style";
+import { confirmDialog } from "../utils/dialog";
 import {
   formatTime,
   getCategory,
@@ -128,12 +129,15 @@ export default function Results({
   const [importResult, setImportResult] = useState(null);
   const importInputRef = useRef(null);
 
-  const participantMap = {};
-  for (const participant of participants) {
-    if (participant.dorsal) {
-      participantMap[String(participant.dorsal).trim()] = participant;
+  const participantMap = useMemo(() => {
+    const map = {};
+    for (const participant of participants) {
+      if (participant.dorsal) {
+        map[String(participant.dorsal).trim()] = participant;
+      }
     }
-  }
+    return map;
+  }, [participants]);
 
   const availableDistances = [
     "TODAS",
@@ -173,7 +177,10 @@ export default function Results({
   const filteredNoTimeFinishers = noTimeFinishers.filter((finisher) => matchesDistance(finisher) && matchesSearch(finisher));
   const filteredDqFinishers = dqFinishers.filter((finisher) => matchesDistance(finisher) && matchesSearch(finisher));
   const filteredFinishers = finishers.filter((finisher) => matchesDistance(finisher) && matchesSearch(finisher));
-  const finisherDorsals = new Set(finishers.map((finisher) => String(finisher.dorsal).trim()));
+  const finisherDorsals = useMemo(
+    () => new Set(finishers.map((finisher) => String(finisher.dorsal).trim())),
+    [finishers]
+  );
 
   const handleMoveUp = useCallback((index) => {
     if (index === 0) return;
@@ -202,15 +209,25 @@ export default function Results({
   }, [activeFinishers, dqFinishers, filteredActiveFinishers, matchesDistance, noTimeFinishers, onReorder]);
 
   const handleDisqualify = useCallback(async (dorsal, reason) => {
+    const motivo = String(reason || "").trim();
+    if (!motivo) return;
+    const participant = participantMap[dorsal];
+    const quien = participant ? `${participant.nombre} (dorsal #${dorsal})` : `el dorsal #${dorsal}`;
+    const ok = await confirmDialog({
+      title: "¿Descalificar?",
+      text: `${quien} quedará fuera del podio. Motivo: "${motivo}".`,
+      confirmText: "Descalificar",
+    });
+    if (!ok) return;
     setDqBusy(true);
     try {
-      await onFinisherDisqualify(dorsal, true, reason);
+      await onFinisherDisqualify(dorsal, true, motivo);
       setDqPanel(null);
       setDqReason("");
     } finally {
       setDqBusy(false);
     }
-  }, [onFinisherDisqualify]);
+  }, [onFinisherDisqualify, participantMap]);
 
   const handleUndoDQ = useCallback(async (dorsal) => {
     await onFinisherDisqualify(dorsal, false, null);
@@ -527,9 +544,15 @@ export default function Results({
 
       {finishers.length === 0 ? (
         <div className="empty-state">
-          <div className="empty-icon">T</div>
-          <h2>Sin resultados aun</h2>
-          <p className="text-muted">Los resultados apareceran aqui una vez que registres atletas en la Meta.</p>
+          <svg className="empty-icon" viewBox="0 0 48 48" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+            <circle cx="24" cy="27" r="15" />
+            <path d="M24 27v-8" />
+            <path d="M19 6h10" />
+            <path d="M24 6v6" />
+            <path d="M37 14l3-3" />
+          </svg>
+          <h2>Sin resultados aún</h2>
+          <p className="text-muted">Los resultados aparecerán acá apenas registres atletas en la Meta.</p>
         </div>
       ) : (
         <>
@@ -565,7 +588,8 @@ export default function Results({
                     <button
                       className="btn btn-danger missed-btn"
                       onClick={() => handleDisqualify(dqPanel, dqReason)}
-                      disabled={dqBusy}
+                      disabled={dqBusy || !dqReason.trim()}
+                      title={dqReason.trim() ? "Descalificar" : "Escribí el motivo para poder descalificar"}
                     >
                       {dqBusy ? "..." : "Confirmar DQ"}
                     </button>
@@ -638,15 +662,18 @@ export default function Results({
           {view === "general" && (
             <div className="table-wrapper">
               <table className="data-table results-table">
+                <caption className="sr-only">
+                  Resultados generales: posición, dorsal, nombre, distancia, categoría y tiempo de meta.
+                </caption>
                 <thead>
                   <tr>
-                    {editMode && <th></th>}
-                    <th>Pos.</th>
-                    <th>Dorsal</th>
-                    <th>Nombre</th>
-                    <th>Dist.</th>
-                    <th>Categoria</th>
-                    <th>Tiempo</th>
+                    {editMode && <th scope="col"><span className="sr-only">Acciones</span></th>}
+                    <th scope="col">Pos.</th>
+                    <th scope="col">Dorsal</th>
+                    <th scope="col">Nombre</th>
+                    <th scope="col">Dist.</th>
+                    <th scope="col">Categoría</th>
+                    <th scope="col">Tiempo</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -663,8 +690,8 @@ export default function Results({
                       >
                         {editMode && (
                           <td className="reorder-cell">
-                            <button className="reorder-btn" onClick={() => handleMoveUp(index)} disabled={index === 0} title="Subir">^</button>
-                            <button className="reorder-btn" onClick={() => handleMoveDown(index)} disabled={index === filteredActiveFinishers.length - 1} title="Bajar">v</button>
+                            <button className="reorder-btn" onClick={() => handleMoveUp(index)} disabled={index === 0} title="Subir una posición" aria-label={`Subir el dorsal ${finisher.dorsal} una posición`}><span aria-hidden="true">^</span></button>
+                            <button className="reorder-btn" onClick={() => handleMoveDown(index)} disabled={index === filteredActiveFinishers.length - 1} title="Bajar una posición" aria-label={`Bajar el dorsal ${finisher.dorsal} una posición`}><span aria-hidden="true">v</span></button>
                             <button
                               className="reorder-btn dq-btn"
                               onClick={() => {
@@ -672,15 +699,17 @@ export default function Results({
                                 setDqReason("");
                               }}
                               title="Descalificar"
+                              aria-label={`Descalificar el dorsal ${finisher.dorsal}`}
                             >
-                              DQ
+                              <span aria-hidden="true">DQ</span>
                             </button>
                             <button
                               className="reorder-btn"
                               onClick={() => onFinisherNoTime(String(finisher.dorsal).trim(), true)}
                               title="Marcar sin tiempo"
+                              aria-label={`Marcar el dorsal ${finisher.dorsal} sin tiempo`}
                             >
-                              ST
+                              <span aria-hidden="true">ST</span>
                             </button>
                           </td>
                         )}
@@ -786,7 +815,7 @@ export default function Results({
                             <button
                               className="reorder-btn undo-dq-btn"
                               onClick={() => handleUndoDQ(String(finisher.dorsal).trim())}
-                              title="Quitar descalificacion"
+                              title="Quitar descalificación"
                             >
                               Undo DQ
                             </button>
@@ -808,7 +837,7 @@ export default function Results({
                   {filteredActiveFinishers.length === 0 && filteredNoTimeFinishers.length === 0 && filteredDqFinishers.length === 0 && (
                     <tr>
                       <td colSpan={editMode ? 7 : 6} className="results-empty-filter">
-                        No hay resultados que coincidan con la busqueda.
+                        No hay resultados que coincidan con la búsqueda.
                       </td>
                     </tr>
                   )}

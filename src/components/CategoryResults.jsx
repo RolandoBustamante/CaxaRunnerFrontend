@@ -57,7 +57,7 @@ export default function CategoryResults({
                 <th>Gral.</th>
                 <th>Dorsal</th>
                 <th>Nombre</th>
-                <th>Categoria</th>
+                <th scope="col">Categoría</th>
                 <th>Tiempo</th>
               </tr>
             </thead>

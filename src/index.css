@@ -9,11 +9,45 @@
   --bg-input: #162032;
 
   --text-primary: #f1f5f9;
-  --text-secondary: #94a3b8;
-  --text-muted: #64748b;
+  --text-secondary: #a6b7cc;
+  --text-muted: #91a5bd;
 
   --shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
   --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
+
+  /* Fills: solid backgrounds for buttons, badges and indicators. */
+  --accent-green: #22c55e;
+  --accent-green-hover: #16a34a;
+  --accent-green-dim: rgba(34, 197, 94, 0.15);
+
+  --accent-red: #dc2626;
+  --accent-red-hover: #b91c1c;
+
+  --accent-blue: #2563eb;
+  --accent-yellow: #f59e0b;
+  --accent-orange: #f97316;
+
+  --gold: #ffd700;
+  --silver: #c0c0c0;
+  --bronze: #cd7f32;
+
+  /* Text roles: the same meanings as the fills, but tuned to stay
+     legible ON the surface rather than under it. Never swap the two —
+     a fill that passes behind white text fails as text on the canvas. */
+  --text-success: #22c55e;
+  --text-warning: #f59e0b;
+  --text-danger: #f87171;
+  --text-info: #60a5fa;
+  --text-gold: #ffd700;
+  --text-silver: #c0c0c0;
+  --text-bronze: #e8a470;
+
+  --border: #334155;
+  --border-light: #475569;
+
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
 
   color-scheme: dark;
 }
@@ -27,7 +61,7 @@
 
   --text-primary: #111c2c;
   --text-secondary: #444651;
-  --text-muted: #747782;
+  --text-muted: #63656f;
 
   --border: #c4c6d2;
   --border-light: #d8e3fa;
@@ -35,33 +69,24 @@
   --shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
   --shadow-sm: 0 2px 10px rgba(0, 0, 0, 0.04);
 
+  /* Fills keep their saturation: they sit behind white or near-black
+     labels, where the dark-tuned hues already carry enough contrast. */
+
+  /* Text roles are retuned for white. The dark values land between
+     1.4:1 and 2.3:1 here, which is the difference between reading a
+     finish time outdoors at dawn and guessing at it. */
+  --text-success: #11602c;
+  --text-warning: #8a5300;
+  --text-danger: #b91c1c;
+  --text-info: #115cb9;
+  --text-gold: #8a6d00;
+  --text-silver: #595959;
+  --text-bronze: #8a5520;
+
   color-scheme: light;
 }
 
 :root {
-
-  --accent-green: #22c55e;
-  --accent-green-hover: #16a34a;
-  --accent-green-dim: rgba(34, 197, 94, 0.15);
-
-  --accent-red: #ef4444;
-  --accent-red-hover: #dc2626;
-
-  --accent-blue: #3b82f6;
-  --accent-yellow: #f59e0b;
-  --accent-orange: #f97316;
-
-  --gold: #ffd700;
-  --silver: #c0c0c0;
-  --bronze: #cd7f32;
-
-  --border: #334155;
-  --border-light: #475569;
-
-  --radius-sm: 4px;
-  --radius-md: 6px;
-  --radius-lg: 8px;
-
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -310,8 +335,53 @@ button {
   cursor: pointer;
   font-family: inherit;
   border: none;
-  outline: none;
   transition: background 0.15s, opacity 0.15s, transform 0.1s;
+}
+
+:where(button, [role="button"], a, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--accent-blue);
+  outline-offset: 2px;
+  border-radius: inherit;
+}
+
+/* Tight clusters have no room for the offset ring. */
+.reorder-btn:focus-visible,
+.dq-btn:focus-visible,
+.time-segment-input:focus-visible,
+.acred-table-toggle:focus-visible {
+  outline-offset: 1px;
+}
+
+/* Browser surfaces the design still owns. */
+::selection {
+  background: var(--accent-blue);
+  color: #fff;
+}
+
+:root {
+  accent-color: var(--accent-blue);
+  caret-color: var(--accent-blue);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 button:active:not(:disabled) {
@@ -321,6 +391,11 @@ button:active:not(:disabled) {
 button:disabled {
   opacity: 0.4;
   cursor: not-allowed;
+}
+
+/* A request in flight is not the same as a control you may not use. */
+button[aria-busy="true"] {
+  cursor: progress;
 }
 
 .btn {
@@ -486,7 +561,7 @@ button:disabled {
   border: 1px solid rgba(245, 158, 11, 0.3);
   border-radius: var(--radius-sm);
   font-size: 0.8rem;
-  color: var(--accent-yellow);
+  color: var(--text-warning);
   font-weight: 500;
   white-space: nowrap;
 }
@@ -574,7 +649,8 @@ button:disabled {
 .time-cell {
   font-family: monospace;
   font-size: 0.95rem;
-  color: var(--accent-green);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-success);
   font-weight: 600;
 }
 
@@ -899,6 +975,17 @@ button:disabled {
   line-height: 1;
 }
 
+/* El zoom accidental en Meta durante la carrera lo causa el doble tap al
+   teclear dorsales rapido, y eso lo mata touch-action. Antes se bloqueaba con
+   user-scalable=no en index.html, que apagaba tambien el pinch deliberado en
+   toda la app (WCAG 1.4.4) y volvia ilegible la letra chica de Acreditacion y
+   Resultados al sol. Ahora el gesto se desactiva solo donde molesta. */
+.finish-container,
+.finish-container button,
+.finish-container input {
+  touch-action: manipulation;
+}
+
 .numpad-key:active {
   background: var(--bg-hover);
   transform: scale(0.95);
@@ -1016,7 +1103,7 @@ button:disabled {
 }
 
 .input-error-msg {
-  color: #fca5a5;
+  color: var(--text-danger);
   font-size: 0.875rem;
   background: rgba(239, 68, 68, 0.08);
   border: 1px solid rgba(239, 68, 68, 0.25);
@@ -1258,7 +1345,9 @@ button:disabled {
 }
 
 .empty-icon {
-  font-size: 3.5rem;
+  width: 3.5rem;
+  height: 3.5rem;
+  color: var(--text-muted);
 }
 
 .empty-state h2 {
@@ -1290,7 +1379,7 @@ button:disabled {
   border-radius: var(--radius-sm);
   padding: 0.6rem 1rem;
   font-size: 0.85rem;
-  color: var(--accent-yellow);
+  color: var(--text-warning);
   font-weight: 500;
 }
 
@@ -1389,19 +1478,19 @@ button:disabled {
 
 .pos-1 {
   background: rgba(255, 215, 0, 0.15);
-  color: var(--gold);
+  color: var(--text-gold);
   border: 1px solid rgba(255, 215, 0, 0.4);
 }
 
 .pos-2 {
   background: rgba(192, 192, 192, 0.15);
-  color: var(--silver);
+  color: var(--text-silver);
   border: 1px solid rgba(192, 192, 192, 0.4);
 }
 
 .pos-3 {
   background: rgba(205, 127, 50, 0.15);
-  color: var(--bronze);
+  color: var(--text-bronze);
   border: 1px solid rgba(205, 127, 50, 0.4);
 }
 
@@ -1413,9 +1502,15 @@ button:disabled {
 /* Reorder controls */
 .reorder-cell {
   display: flex;
-  gap: 2px;
+  gap: 0.25rem;
   align-items: center;
   padding: 0.4rem 0.5rem !important;
+}
+
+/* Reordering nudges a row; DQ takes a person off a podium. They sat 2px
+   apart, so the mis-tap was a matter of time. */
+.reorder-cell .dq-btn {
+  margin-left: 0.5rem;
 }
 
 .reorder-btn {
@@ -1453,26 +1548,24 @@ button:disabled {
   border-color: var(--accent-green);
 }
 
-.row-dq {
-  opacity: 0.55;
-}
-
 .row-dq td {
+  color: var(--text-muted);
   text-decoration: line-through;
 }
 
 .row-dq .dq-badge {
+  display: inline-block;
   background: rgba(239, 68, 68, 0.15);
-  color: #ef4444;
+  color: var(--text-danger);
   border: 1px solid rgba(239, 68, 68, 0.4);
   text-decoration: none;
 }
 
 .row-dq .dq-reason-inline {
+  display: inline-block;
   font-size: 0.78rem;
-  color: #ef4444;
+  color: var(--text-danger);
   text-decoration: none;
-  opacity: 0.85;
 }
 
 .dq-panel {
@@ -1765,15 +1858,16 @@ button:disabled {
   word-break: break-word;
 }
 
-.podium-gold .podium-athlete-name { color: var(--gold); }
-.podium-silver .podium-athlete-name { color: var(--silver); }
-.podium-bronze .podium-athlete-name { color: var(--bronze); }
+.podium-gold .podium-athlete-name { color: var(--text-gold); }
+.podium-silver .podium-athlete-name { color: var(--text-silver); }
+.podium-bronze .podium-athlete-name { color: var(--text-bronze); }
 
 .podium-time {
   font-family: monospace;
   font-size: 1rem;
   font-weight: 700;
-  color: var(--accent-green);
+  color: var(--text-success);
+  font-variant-numeric: tabular-nums;
 }
 
 .podium-overall {
@@ -1938,7 +2032,7 @@ button:disabled {
 }
 
 .acred-add-input {
-  background: var(--bg-main);
+  background: var(--bg-input);
   border: 1px solid var(--border);
   border-radius: 6px;
   color: var(--text-primary);
@@ -1974,7 +2068,7 @@ button:disabled {
 }
 
 .dni-lookup-warn {
-  color: #f59e0b;
+  color: var(--text-warning);
 }
 
 /* Participant card */
@@ -2099,10 +2193,15 @@ button:disabled {
 }
 
 .acred-assign-error {
-  font-size: 0.8rem;
-  color: #fca5a5;
-  text-align: right;
-  max-width: 200px;
+  margin-top: 0.4rem;
+  padding: 0.4rem 0.6rem;
+  border-radius: var(--radius-sm);
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  font-size: 0.875rem;
+  line-height: 1.35;
+  color: var(--text-danger);
+  text-align: left;
 }
 
 /* Toggle buttons (kit & carta) */
@@ -2129,7 +2228,7 @@ button:disabled {
 .acred-toggle-on {
   background: var(--accent-green-dim);
   border-color: var(--accent-green);
-  color: var(--accent-green);
+  color: var(--text-success);
 }
 
 .acred-toggle-on:hover {
@@ -2193,9 +2292,9 @@ button:disabled {
   line-height: 1;
 }
 
-.acred-stat-green { color: var(--accent-green); }
-.acred-stat-blue  { color: var(--accent-blue); }
-.acred-stat-yellow { color: var(--accent-yellow); }
+.acred-stat-green { color: var(--text-success); }
+.acred-stat-blue  { color: var(--text-info); }
+.acred-stat-yellow { color: var(--text-warning); }
 
 .acred-stat-label {
   font-size: 0.75rem;
@@ -2204,6 +2303,19 @@ button:disabled {
   text-transform: uppercase;
   letter-spacing: 0.04em;
   white-space: nowrap;
+}
+
+.acred-table-error,
+.acred-toggle-error {
+  margin: 0 0 0.6rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius-sm);
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: var(--text-danger);
+  font-size: 0.85rem;
+  text-align: left;
+  max-width: none;
 }
 
 .acred-stat-divider {
@@ -2294,7 +2406,7 @@ button:disabled {
 
 .acred-dorsal-empty {
   font-size: 0.8rem;
-  color: var(--accent-blue);
+  color: var(--text-info);
   font-weight: 500;
 }
 
@@ -2370,7 +2482,7 @@ button:disabled {
 
 .acred-dorsal-cancel {
   background: var(--bg-hover);
-  color: var(--text-muted);
+  color: var(--text-secondary);
   border: 1px solid var(--border);
   border-radius: 0.3rem;
   padding: 0.2rem 0.45rem;
@@ -3029,7 +3141,7 @@ button:disabled {
 .btn-danger-sm {
   background: none;
   border: 1px solid var(--accent-red);
-  color: var(--accent-red);
+  color: var(--text-danger);
   border-radius: var(--radius-sm);
   padding: 0.25rem 0.6rem;
   font-size: 0.78rem;
@@ -3040,6 +3152,23 @@ button:disabled {
 .btn-danger-sm:hover {
   background: var(--accent-red);
   color: #fff;
+}
+
+.btn-secondary-sm {
+  background: none;
+  border: 1px solid var(--bg-hover);
+  color: var(--text-secondary);
+  border-radius: var(--radius-sm);
+  padding: 0.25rem 0.6rem;
+  font-size: 0.78rem;
+  margin-right: 0.4rem;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.btn-secondary-sm:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
 }
 
 @media (max-width: 600px) {
@@ -7030,10 +7159,28 @@ button:disabled {
 /* =========================================================
    Movil: minimos de uso (tap, legibilidad, tablas)
    ========================================================= */
-@media (max-width: 760px) {
-  /* --- objetivos tactiles: 44px es el minimo comodo con el pulgar ---
-     El prefijo [data-theme] es para ganarle a reglas de tema que ya fijaban
-     min-height: 2.45rem (39px) con mas especificidad. */
+/* =========================================================
+   Objetivos tactiles
+   El gate anterior era max-width:760px, asi que la tablet de 768 de la mesa
+   se quedaba con botones de 20px. El dispositivo importa, no el ancho.
+   ========================================================= */
+
+/* Piso WCAG 2.5.8 para puntero fino. */
+.dq-btn,
+.time-segment-input,
+.acred-dorsal-edit-trigger,
+.acred-search-clear,
+.acred-add-close,
+.acred-dorsal-confirm,
+.acred-dorsal-cancel,
+.reorder-btn,
+.results-search-clear {
+  min-height: 24px;
+  min-width: 24px;
+}
+
+@media (pointer: coarse) {
+  /* El prefijo [data-theme] le gana a reglas de tema que fijaban 2.45rem. */
   [data-theme] .btn,
   [data-theme] .btn-tab,
   [data-theme] .navbar-user-trigger,
@@ -7043,16 +7190,33 @@ button:disabled {
   [data-theme] .acred-table-toggle,
   [data-theme] .user-race-chip,
   [data-theme] .btn-danger-sm,
+  [data-theme] .btn-secondary-sm,
   [data-theme] .reorder-btn,
+  [data-theme] .dq-btn,
+  [data-theme] .acred-dorsal-confirm,
+  [data-theme] .acred-dorsal-cancel,
+  [data-theme] .acred-search-clear,
+  [data-theme] .results-search-clear,
+  [data-theme] .acred-add-close,
+  [data-theme] .time-segment-input,
+  [data-theme] .time-confirm-btn,
   [data-theme] .race-asset-link {
     min-height: 44px;
   }
 
   [data-theme] .btn,
   [data-theme] .reorder-btn,
+  [data-theme] .dq-btn,
   [data-theme] .btn-danger-sm,
+  [data-theme] .btn-secondary-sm,
   [data-theme] .acred-table-toggle,
-  [data-theme] .acred-dorsal-edit-trigger {
+  [data-theme] .acred-dorsal-edit-trigger,
+  [data-theme] .acred-dorsal-confirm,
+  [data-theme] .acred-dorsal-cancel,
+  [data-theme] .acred-search-clear,
+  [data-theme] .results-search-clear,
+  [data-theme] .acred-add-close,
+  [data-theme] .time-confirm-btn {
     min-width: 44px;
   }
 
@@ -7062,12 +7226,21 @@ button:disabled {
   }
 
   /* Las flechas de reordenar venian de 23x20 */
-  .reorder-btn {
+  .reorder-btn,
+  .dq-btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     font-size: 0.95rem;
   }
+
+  /* DQ saca a alguien del podio y vivia a 2px de "bajar fila". */
+  .reorder-cell {
+    gap: 0.5rem;
+  }
+}
+
+@media (max-width: 760px) {
 
   /* El checkbox nativo queda en 20px, pero su etiqueta si es area de toque */
   label:has(> input[type="checkbox"]),
@@ -7258,7 +7431,8 @@ button:disabled {
   min-width: 180px;
 }
 
-.participant-filters-input::placeholder {
+.participant-filters-input::placeholder,
+.results-search-input::placeholder {
   color: var(--text-muted);
 }
 
