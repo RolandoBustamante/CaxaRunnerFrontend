@@ -149,6 +149,7 @@ export const api = {
   getUsers: () => request("GET", "/auth/users"),
   createUser: (username, password) => request("POST", "/auth/users", { username, password }),
   deleteUser: (id) => request("DELETE", `/auth/users/${id}`),
+  changeUserPassword: (id, password) => request("PUT", `/auth/users/${idToPath(id)}/password`, { password }),
   assignUserToRace: (userId, raceId) => request("POST", `/auth/users/${idToPath(userId)}/races`, { raceId }),
   removeUserFromRace: (userId, raceId) => request("DELETE", `/auth/users/${idToPath(userId)}/races/${idToPath(raceId)}`),
 

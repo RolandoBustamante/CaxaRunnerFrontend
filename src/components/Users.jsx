@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { api } from "../api";
-import { confirmDialog } from "../utils/dialog";
+import { confirmDialog, passwordDialog, successDialog } from "../utils/dialog";
 
 export default function Users() {
   const [users, setUsers] = useState([]);
@@ -54,6 +54,21 @@ export default function Users() {
     try {
       await api.deleteUser(id);
       fetchUsers();
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
+  async function handleChangePassword(id, name) {
+    const newPassword = await passwordDialog({
+      title: "Cambiar contraseña",
+      text: `Nueva contraseña para "${name}"`,
+    });
+    if (!newPassword) return;
+    setError(null);
+    try {
+      await api.changeUserPassword(id, newPassword);
+      successDialog({ title: "Contraseña actualizada", text: `La contraseña de "${name}" fue cambiada.` });
     } catch (err) {
       setError(err.message);
     }
@@ -181,6 +196,12 @@ export default function Users() {
                   </td>
                   <td>{new Date(u.createdAt).toLocaleDateString("es-PE")}</td>
                   <td>
+                    <button
+                      className="btn-secondary-sm"
+                      onClick={() => handleChangePassword(u.id, u.username)}
+                    >
+                      Contraseña
+                    </button>
                     {u.role !== "MASTER" && (
                       <button
                         className="btn-danger-sm"

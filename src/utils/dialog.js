@@ -46,3 +46,18 @@ export function errorDialog({ title, text }) {
     showCancelButton: false,
   });
 }
+
+export function passwordDialog({ title, text, confirmText = "Guardar" }) {
+  return Swal.fire({
+    ...base,
+    title,
+    text,
+    input: "password",
+    inputAttributes: { autocapitalize: "off", autocomplete: "new-password" },
+    inputValidator: (value) =>
+      !value || value.length < 4 ? "Mínimo 4 caracteres" : undefined,
+    showCancelButton: true,
+    confirmButtonText: confirmText,
+    cancelButtonText: "Cancelar",
+  }).then((r) => (r.isConfirmed ? r.value : null));
+}
