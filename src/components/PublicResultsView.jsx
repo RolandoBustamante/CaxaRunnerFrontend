@@ -85,9 +85,8 @@ function CertificateDocumentPreview({ slug, dorsal, documento }) {
 }
 
 function CertificatePreview({ race, certificate }) {
-  const isNoTimeCertificate = Boolean(certificate?.noTime);
   const isTrail = race?.certificateTemplate === "trail";
-  const timeValue = isNoTimeCertificate ? "ST" : formatCertificateTime(certificate.timeMs);
+  const timeValue = formatCertificateTime(certificate.timeMs);
   return (
     <div className="certificate-preview-shell">
       <div className={`certificate-preview ${isTrail ? "certificate-preview-trail" : ""}`}>
@@ -114,16 +113,16 @@ function CertificatePreview({ race, certificate }) {
         </div>
         <div className="certificate-title">CERTIFICADO</div>
         <p className="certificate-copy">
-          {isNoTimeCertificate ? "El comité organizador certifica una llegada validada sin tiempo oficial." : "El comité organizador certifica que el corredor(a) concluyó oficialmente la prueba."}
+          El comité organizador certifica que el corredor(a) concluyó oficialmente la prueba.
         </p>
         <div className="certificate-name">{certificate.name}</div>
         <p className="certificate-copy certificate-copy-strong">
-          {isNoTimeCertificate ? (<>Se certifica la llegada validada a la distancia de <strong>{certificate.distance}</strong>, con registro confirmado <strong>sin tiempo oficial</strong>.</>) : (<>Concluyó oficialmente la distancia de <strong>{certificate.distance}</strong>, ocupando el puesto <strong>{certificate.position}</strong> en la clasificación general de su distancia, con un tiempo oficial de <strong>{formatCertificateTime(certificate.timeMs)}</strong>.</>)}
+          Concluyó oficialmente la distancia de <strong>{certificate.distance}</strong>, ocupando el puesto <strong>{certificate.position}</strong> en la clasificación general de su distancia, con un tiempo oficial de <strong>{formatCertificateTime(certificate.timeMs)}</strong>.
         </p>
         <div className="certificate-grid">
           <div className="certificate-metric">
             <div className="certificate-metric-value">{timeValue}</div>
-            <div className="certificate-metric-label">{isNoTimeCertificate ? "Estado" : "Tiempo oficial"}</div>
+            <div className="certificate-metric-label">Tiempo oficial</div>
           </div>
           <div className="certificate-metric">
             <div className="certificate-metric-value">{certificate.position}</div>
@@ -198,7 +197,7 @@ export default function PublicResultsView() {
     ));
 
     if (!normalized) {
-      return results.filter((result) => !result.noTime);
+      return results;
     }
 
     return results.filter((result) => {
@@ -382,8 +381,8 @@ export default function PublicResultsView() {
                           <button
                             type="button"
                             className="public-pdf-btn"
-                            title={result.disqualified ? "Certificado no disponible" : "Descargar certificado"}
-                            disabled={result.disqualified}
+                            title={(result.disqualified || result.noTime) ? "Certificado no disponible" : "Descargar certificado"}
+                            disabled={result.disqualified || result.noTime}
                             onClick={() => {
                               setSelectedResult(result);
                               setDocumentInput("");
