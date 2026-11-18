@@ -7475,3 +7475,29 @@ button[aria-busy="true"] {
   background: var(--bg-surface);
   color: var(--text-primary);
 }
+
+/* Previa del certificado servida como documento (plantillas que solo viven en el server). */
+.certificate-doc-shell {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  border-radius: 10px;
+  margin: 0.25rem 0 0.5rem;
+}
+
+.certificate-doc-frame {
+  position: absolute;
+  top: 0;
+  left: 0;
+  border: 0;
+  transform-origin: top left;
+}
+
+.certificate-doc-loading {
+  display: grid;
+  place-items: center;
+  height: 100%;
+  min-height: 160px;
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 0.9rem;
+}

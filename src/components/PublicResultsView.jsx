@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../api";
 import { formatTime } from "../utils/categories";
 import { formatRaceDate } from "../utils/dates";
@@ -20,6 +20,67 @@ function ImageDownloadIcon() {
       <circle cx="9" cy="10" r="1.7" fill="currentColor" />
       <path d="M6.5 16l3.8-3.6 2.8 2.4 2.9-3 2.5 4.2" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
+  );
+}
+
+const CERTIFICATE_DOC_WIDTH = 1120;
+const CERTIFICATE_DOC_HEIGHT = 760;
+
+/**
+ * Previa de las plantillas que viven solo en el servidor: muestra el mismo HTML que
+ * alimenta el PDF y la imagen, escalado al ancho disponible. Asi no hay dos disenos
+ * que mantener sincronizados.
+ */
+function CertificateDocumentPreview({ slug, dorsal, documento }) {
+  const [html, setHtml] = useState(null);
+  const [error, setError] = useState("");
+  const [scale, setScale] = useState(1);
+  const shellRef = useRef(null);
+
+  useEffect(() => {
+    if (!slug || !dorsal || !documento) return undefined;
+    let cancelled = false;
+    setHtml(null);
+    setError("");
+    api.fetchCertificateHtml(slug, dorsal, documento)
+      .then((text) => { if (!cancelled) setHtml(text); })
+      .catch((err) => { if (!cancelled) setError(err.message || "No se pudo cargar el certificado"); });
+    return () => { cancelled = true; };
+  }, [slug, dorsal, documento]);
+
+  // El documento mide 1120x760 fijos; se encoge al ancho del dialogo, nunca se agranda.
+  useEffect(() => {
+    const shell = shellRef.current;
+    if (!shell) return undefined;
+    const observer = new ResizeObserver(([entry]) => {
+      const width = entry.contentRect.width;
+      if (width > 0) setScale(Math.min(1, width / CERTIFICATE_DOC_WIDTH));
+    });
+    observer.observe(shell);
+    return () => observer.disconnect();
+  }, []);
+
+  if (error) return <div className="login-error">{error}</div>;
+
+  return (
+    <div className="certificate-doc-shell" ref={shellRef} style={{ height: CERTIFICATE_DOC_HEIGHT * scale }}>
+      {html ? (
+        <iframe
+          className="certificate-doc-frame"
+          title="Certificado"
+          srcDoc={html}
+          sandbox=""
+          scrolling="no"
+          style={{
+            width: CERTIFICATE_DOC_WIDTH,
+            height: CERTIFICATE_DOC_HEIGHT,
+            transform: `scale(${scale})`,
+          }}
+        />
+      ) : (
+        <div className="certificate-doc-loading">Generando certificado...</div>
+      )}
+    </div>
   );
 }
 
@@ -418,7 +479,15 @@ export default function PublicResultsView() {
             ) : (
               <>
                 <div className="app-dialog-body">
-                  <CertificatePreview race={state?.race} certificate={certificate} />
+                  {state?.race?.certificateTemplate === "media" ? (
+                    <CertificateDocumentPreview
+                      slug={slug}
+                      dorsal={selectedResult?.certificateDorsal || selectedResult?.dorsal}
+                      documento={documentInput.trim()}
+                    />
+                  ) : (
+                    <CertificatePreview race={state?.race} certificate={certificate} />
+                  )}
                   {validationError && <div className="login-error">{validationError}</div>}
                 </div>
                 <div className="app-dialog-actions">

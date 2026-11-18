@@ -192,6 +192,17 @@ export const api = {
     }),
   validateCertificateAccess: (slug, dorsal, documento) =>
     request("POST", `/public/${encodeURIComponent(slug)}/certificate`, { dorsal, documento }),
+  // La vista previa pide el mismo HTML que alimenta el PDF y la imagen.
+  fetchCertificateHtml: (slug, dorsal, documento) =>
+    fetch(`${BASE}/public/${encodeURIComponent(slug)}/certificate/html`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ dorsal, documento }),
+    }).then(async (res) => {
+      const text = await res.text();
+      if (!res.ok) throw new Error(text || "Error al generar el certificado");
+      return text;
+    }),
   downloadCertificatePdf: (slug, dorsal, documento) =>
     requestBlob("POST", `/public/${encodeURIComponent(slug)}/certificate/pdf`, { dorsal, documento }),
   downloadCertificateImage: async (slug, dorsal, documento) => {

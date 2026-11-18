@@ -673,6 +673,7 @@ export default function CategoryConfig({
               >
                 <option value="classic">Clásico</option>
                 <option value="trail">Trail verde</option>
+                <option value="media">Media Maratón Cajamarca</option>
               </select>
             </label>
               </div>
