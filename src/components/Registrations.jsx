@@ -30,6 +30,28 @@ function formatBirthDate(value) {
   return new Date(value).toLocaleDateString("es-PE", { timeZone: "UTC" });
 }
 
+// ponytail: el voucher es uno por solicitud; se reparte por precio de distancia y el ultimo absorbe el redondeo
+export function splitPaidAmounts(participants, total, priceMap) {
+  const prices = participants.map((p) => {
+    const price = priceMap.get(String(p.distancia || "").trim().toUpperCase());
+    return Number.isFinite(price) ? price : null;
+  });
+  const sum = prices.reduce((acc, price) => acc + (price ?? 0), 0);
+  if (total == null || !(sum > 0)) return { prices, paid: participants.map(() => null) };
+  let left = roundMoney(total);
+  const paid = prices.map((price, index) => {
+    if (index === prices.length - 1) return roundMoney(left);
+    const part = roundMoney(total * ((price ?? 0) / sum));
+    left -= part;
+    return part;
+  });
+  return { prices, paid };
+}
+
+function roundMoney(value) {
+  return Math.round(value * 100) / 100;
+}
+
 export default function Registrations({ race, raceId, currentUser, onApproved, categories = DEFAULT_CATEGORIES }) {
   const [status, setStatus] = useState("PENDING");
   const [filters, setFilters] = useState(EMPTY_FILTERS);
@@ -49,6 +71,15 @@ export default function Registrations({ race, raceId, currentUser, onApproved, c
     () => distanceOptions(race?.distances, registrations.flatMap((r) => r.participants)),
     [race?.distances, registrations]
   );
+
+  const priceMap = useMemo(() => {
+    const rows = Array.isArray(race?.registrationPrices) ? race.registrationPrices : [];
+    return new Map(
+      rows
+        .map((item) => [String(item?.distance || "").trim().toUpperCase(), Number(item?.price)])
+        .filter(([distance, price]) => distance && Number.isFinite(price) && price >= 0)
+    );
+  }, [race?.registrationPrices]);
 
   // ponytail: la solicitud se muestra si al menos un participante calza con los filtros
   const visibleRegistrations = useMemo(
@@ -75,17 +106,26 @@ export default function Registrations({ race, raceId, currentUser, onApproved, c
   }, [load]);
 
   function exportExcel() {
-    const rows = visibleRegistrations.flatMap((registration) =>
-      registration.participants
-        .filter((participant) => matchesFilters(participant, filters, categories))
-        .map((participant) => ({
+    const rows = visibleRegistrations.flatMap((registration) => {
+      const { prices, paid } = splitPaidAmounts(
+        registration.participants,
+        registration.totalAmount == null ? null : Number(registration.totalAmount),
+        priceMap
+      );
+      return registration.participants
+        .map((participant, index) => ({ participant, precio: prices[index], pagado: paid[index] }))
+        .filter(({ participant }) => matchesFilters(participant, filters, categories))
+        .map(({ participant, precio, pagado }) => ({
           Codigo: registration.code,
           Estado: registration.status,
           Fecha: formatDate(registration.createdAt),
           Contacto: registration.contactName,
           Telefono: registration.contactPhone || "",
           Email: registration.contactEmail || "",
-          Total: registration.totalAmount == null ? "" : Number(registration.totalAmount),
+          "Total solicitud": registration.totalAmount == null ? "" : Number(registration.totalAmount),
+          "Participantes en la solicitud": registration.participants.length,
+          "Precio lista": precio == null ? "" : precio,
+          "Monto pagado": pagado == null ? "" : pagado,
           Descuento: registration.discountCode || "",
           Nombre: participant.nombre,
           Documento: participant.documento,
@@ -99,8 +139,8 @@ export default function Registrations({ race, raceId, currentUser, onApproved, c
           Talla: participant.garmentSize,
           "Contacto emergencia": participant.emergencyName || "",
           "Telefono emergencia": participant.emergencyPhone || "",
-        }))
-    );
+        }));
+    });
     if (rows.length === 0) {
       setMessage("No hay inscripciones para exportar.");
       return;
