@@ -30,14 +30,19 @@ function formatBirthDate(value) {
   return new Date(value).toLocaleDateString("es-PE", { timeZone: "UTC" });
 }
 
-// ponytail: el voucher es uno por solicitud; se reparte por precio de distancia y el ultimo absorbe el redondeo
-export function splitPaidAmounts(participants, total, priceMap) {
+// ponytail: nadie guardo cuanto pago cada corredor; se reparte el pago por precio de distancia
+// y si la lista no suma lo cobrado se marca "revisar" en vez de inventar el desglose
+export function splitPaidAmounts(participants, total, priceMap, subtotal = null) {
   const prices = participants.map((p) => {
     const price = priceMap.get(String(p.distancia || "").trim().toUpperCase());
     return Number.isFinite(price) ? price : null;
   });
-  const sum = prices.reduce((acc, price) => acc + (price ?? 0), 0);
-  if (total == null || !(sum > 0)) return { prices, paid: participants.map(() => null) };
+  const sum = roundMoney(prices.reduce((acc, price) => acc + (price ?? 0), 0));
+  const esperado = subtotal == null ? total : roundMoney(subtotal);
+  const descuadre = total == null || !(sum > 0) ? null : roundMoney(esperado - sum);
+  if (total == null || !(sum > 0)) {
+    return { prices, paid: participants.map(() => null), descuadre: null };
+  }
   let left = roundMoney(total);
   const paid = prices.map((price, index) => {
     if (index === prices.length - 1) return roundMoney(left);
@@ -45,7 +50,7 @@ export function splitPaidAmounts(participants, total, priceMap) {
     left -= part;
     return part;
   });
-  return { prices, paid };
+  return { prices, paid, descuadre: descuadre === 0 ? null : descuadre };
 }
 
 function roundMoney(value) {
@@ -107,10 +112,11 @@ export default function Registrations({ race, raceId, currentUser, onApproved, c
 
   function exportExcel() {
     const rows = visibleRegistrations.flatMap((registration) => {
-      const { prices, paid } = splitPaidAmounts(
+      const { prices, paid, descuadre } = splitPaidAmounts(
         registration.participants,
         registration.totalAmount == null ? null : Number(registration.totalAmount),
-        priceMap
+        priceMap,
+        registration.subtotalAmount == null ? null : Number(registration.subtotalAmount)
       );
       return registration.participants
         .map((participant, index) => ({ participant, precio: prices[index], pagado: paid[index] }))
@@ -126,6 +132,7 @@ export default function Registrations({ race, raceId, currentUser, onApproved, c
           "Participantes en la solicitud": registration.participants.length,
           "Precio lista": precio == null ? "" : precio,
           "Monto pagado": pagado == null ? "" : pagado,
+          Revisar: descuadre == null ? "" : `la lista de precios no cuadra con lo cobrado (${descuadre > 0 ? "+" : ""}${descuadre})`,
           Descuento: registration.discountCode || "",
           Nombre: participant.nombre,
           Documento: participant.documento,
